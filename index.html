@@ -1,0 +1,144 @@
+<script>
+    "use strict"
+    function cell_make(i,j) {
+        return {};
+    }
+
+    function grid_make (opts) {
+        opts = opts || {};
+        // Make grid with 20 visible rows and 20 hidden buffer rows above.
+        let nrows = 20 + 20;
+        let ncols = 10;
+        if (opts.use_test_grid || false) {
+            nrows = 6;
+            ncols = 5;
+        }
+        const grid = [];
+        for (let i = 0; i < nrows; i++) {
+            const row = [];
+            for (let j = 0; j < ncols; j++) {
+                row.push(cell_make(i,j));
+            }
+            grid.push(row);
+        }
+        return grid;
+    }
+
+    function tetrimino_make (opts) {
+        opts = opts || {};
+        return {
+            i: 0,
+            j: 1,
+            type: opts.type || "test",
+            gravity_counter: 0
+        }
+    }
+
+    function game_make (opts) {
+        opts = opts || {};
+        const obj = {};
+        const tetriminos = [];
+        const grid = grid_make (opts.grid || {});
+        let gravity = opts.gravity || .1;
+
+        obj.add_tetrimino = function (tetrimino) {
+            tetriminos.push(tetrimino)
+        };
+        obj.tick_frame = function () {
+            // Tetriminos move at a rate of `gravity` cells per frame.
+            tetriminos.forEach(t => {
+                t.gravity_counter += opts.gravity;
+                if (t.gravity_counter >= 1) {
+                    t.i++;
+                    t.gravity_counter = 0;
+                }
+            });
+        };
+        obj.render_text = function () {
+            const text_grid = [];
+            for (let i = 0; i < grid.length; i++) {
+                const row = [];
+                for (let j = 0; j < grid[i].length; j++) {
+                    row.push(".");
+                }
+                text_grid.push(row);
+            }
+            // Apply pieces.
+            tetriminos.forEach(t => {
+                if (t.type == "test") {
+                    text_grid[t.i][t.j] = "#";
+                } else {
+                    throw "Do not know how to apply piece of type: " + t.type
+                }
+            });
+            // Render to string.
+            let ret = "";
+            for (let i = 0; i < grid.length; i++) {
+                if (i > 0) ret += "\n";
+                ret += text_grid[i].join("");
+            }
+            return ret;
+        };
+        obj.get_grid = function() {
+            // TODO: can I return a read-only view of an object?
+            return grid;
+        }
+        return obj;
+    }
+
+    // Tests ... begin
+    function assert_rendered (game, expected) {
+        const got = game.render_text();
+        expected = expected.join("\n");
+        console.assert(got == expected, "expected grid:\n%s\ngot grid:\n%s\n", expected, got);
+    }
+    function test_add_tetrimino () {
+        const game = game_make({grid: {use_test_grid: true}});
+        game.add_tetrimino (tetrimino_make());
+        assert_rendered(game,
+            [
+            ".#...",
+            ".....",
+            ".....",
+            ".....",
+            ".....",
+            "....."
+            ]);
+    }
+    function test_gravity () {
+        const game = game_make({grid: {use_test_grid: true}, gravity: .5});
+        game.add_tetrimino (tetrimino_make());
+        assert_rendered(game,
+            [
+            ".#...",
+            ".....",
+            ".....",
+            ".....",
+            ".....",
+            "....."
+            ]);
+        game.tick_frame ();
+        assert_rendered(game,
+            [
+            ".#...",
+            ".....",
+            ".....",
+            ".....",
+            ".....",
+            "....."
+            ]);
+        game.tick_frame ();
+        assert_rendered(game,
+            [
+            ".....",
+            ".#...",
+            ".....",
+            ".....",
+            ".....",
+            "....."
+            ]);
+    }
+    test_add_tetrimino ();
+    test_gravity();
+    // Tests ... end
+</script>
