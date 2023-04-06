@@ -1,10 +1,10 @@
 <script>
     "use strict"
-    function cell_make(i,j) {
+    function cell_make(i, j) {
         return {};
     }
 
-    function grid_make (opts) {
+    function grid_make(opts) {
         opts = opts || {};
         // Make grid with 20 visible rows and 20 hidden buffer rows above.
         let nrows = 20 + 20;
@@ -17,43 +17,52 @@
         for (let i = 0; i < nrows; i++) {
             const row = [];
             for (let j = 0; j < ncols; j++) {
-                row.push(cell_make(i,j));
+                row.push(cell_make(i, j));
             }
             grid.push(row);
         }
         return grid;
     }
 
-    function tetrimino_make (opts) {
+    function tetrimino_make(opts) {
         opts = opts || {};
         return {
-            i: 0,
-            j: 1,
+            i: opts.i || 0,
+            j: opts.j || 1,
             type: opts.type || "test",
             gravity_counter: 0
         }
     }
 
-    function game_make (opts) {
+    function game_make(opts) {
         opts = opts || {};
         const obj = {};
-        const tetriminos = [];
-        const grid = grid_make (opts.grid || {});
+        // tetrimino is the active tetrimino.
+        let tetrimino = null;
+        const grid = grid_make(opts.grid || {});
         let gravity = opts.gravity || .1;
 
-        obj.add_tetrimino = function (tetrimino) {
-            tetriminos.push(tetrimino)
+        obj.add_tetrimino = function (t) {
+            console.assert(tetrimino == null);
+            tetrimino = t;
         };
         obj.tick_frame = function () {
             // Tetriminos move at a rate of `gravity` cells per frame.
-            tetriminos.forEach(t => {
+            let t = tetrimino;
+            if (t) {
                 t.gravity_counter += opts.gravity;
                 if (t.gravity_counter >= 1) {
                     t.i++;
                     t.gravity_counter = 0;
                 }
-            });
+            }
         };
+
+        // render_text renders the tetris game in text.
+        // Used for testing.
+        // F == Fill
+        // # == Tetrimino
+        // . == Empty
         obj.render_text = function () {
             const text_grid = [];
             for (let i = 0; i < grid.length; i++) {
@@ -63,14 +72,16 @@
                 }
                 text_grid.push(row);
             }
-            // Apply pieces.
-            tetriminos.forEach(t => {
+            let t = tetrimino;
+            if (t) {
                 if (t.type == "test") {
-                    text_grid[t.i][t.j] = "#";
+                    if (t.i >= 0 && t.i < text_grid.length && t.j >= 0 && t.j < text_grid[t.i].length) {
+                        text_grid[t.i][t.j] = "#";
+                    }
                 } else {
-                    throw "Do not know how to apply piece of type: " + t.type
+                    throw "Do not know how to apply tetrimino of type: " + t.type
                 }
-            });
+            }
             // Render to string.
             let ret = "";
             for (let i = 0; i < grid.length; i++) {
@@ -79,7 +90,7 @@
             }
             return ret;
         };
-        obj.get_grid = function() {
+        obj.get_grid = function () {
             // TODO: can I return a read-only view of an object?
             return grid;
         }
@@ -87,58 +98,106 @@
     }
 
     // Tests ... begin
-    function assert_rendered (game, expected) {
+    function assert_rendered(game, expected) {
         const got = game.render_text();
         expected = expected.join("\n");
         console.assert(got == expected, "expected grid:\n%s\ngot grid:\n%s\n", expected, got);
     }
-    function test_add_tetrimino () {
-        const game = game_make({grid: {use_test_grid: true}});
-        game.add_tetrimino (tetrimino_make());
+    function test_add_tetrimino() {
+        const game = game_make({ grid: { use_test_grid: true } });
+        game.add_tetrimino(tetrimino_make());
         assert_rendered(game,
             [
-            ".#...",
-            ".....",
-            ".....",
-            ".....",
-            ".....",
-            "....."
+                ".#...",
+                ".....",
+                ".....",
+                ".....",
+                ".....",
+                "....."
             ]);
     }
-    function test_gravity () {
-        const game = game_make({grid: {use_test_grid: true}, gravity: .5});
-        game.add_tetrimino (tetrimino_make());
+    function test_gravity() {
+        const game = game_make({ grid: { use_test_grid: true }, gravity: .5 });
+        game.add_tetrimino(tetrimino_make());
         assert_rendered(game,
             [
-            ".#...",
-            ".....",
-            ".....",
-            ".....",
-            ".....",
-            "....."
+                ".#...",
+                ".....",
+                ".....",
+                ".....",
+                ".....",
+                "....."
             ]);
-        game.tick_frame ();
+        game.tick_frame();
         assert_rendered(game,
             [
-            ".#...",
-            ".....",
-            ".....",
-            ".....",
-            ".....",
-            "....."
+                ".#...",
+                ".....",
+                ".....",
+                ".....",
+                ".....",
+                "....."
             ]);
-        game.tick_frame ();
+        game.tick_frame();
         assert_rendered(game,
             [
-            ".....",
-            ".#...",
-            ".....",
-            ".....",
-            ".....",
-            "....."
+                ".....",
+                ".#...",
+                ".....",
+                ".....",
+                ".....",
+                "....."
             ]);
     }
-    test_add_tetrimino ();
+    function test_lock() {
+        const game = game_make({ grid: { use_test_grid: true }, gravity: 1 });
+        game.add_tetrimino(tetrimino_make({ i: 4 }));
+        assert_rendered(game,
+            [
+                ".....",
+                ".....",
+                ".....",
+                ".....",
+                ".#...",
+                "....."
+            ]);
+        game.tick_frame();
+        assert_rendered(game,
+            [
+                ".....",
+                ".....",
+                ".....",
+                ".....",
+                ".....",
+                ".#..."
+            ]);
+        // Tick 29 frames.
+        for (let i = 0; i < 29; i++) game.tick_frame();
+        // Expect still not locked.
+        assert_rendered(game,
+            [
+                ".....",
+                ".....",
+                ".....",
+                ".....",
+                ".....",
+                ".#..."
+            ]);
+        // Wait another frame.
+        game.tick_frame();
+        // Expect locked.
+        assert_rendered(game,
+            [
+                ".....",
+                ".....",
+                ".....",
+                ".....",
+                ".....",
+                ".F..."
+            ]);
+    }
+    test_add_tetrimino();
     test_gravity();
+    test_lock();
     // Tests ... end
 </script>
