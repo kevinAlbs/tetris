@@ -13,15 +13,39 @@
             nrows = 6;
             ncols = 5;
         }
-        const grid = [];
+
+        const obj = {
+            data: []
+        };
         for (let i = 0; i < nrows; i++) {
             const row = [];
             for (let j = 0; j < ncols; j++) {
                 row.push(cell_make(i, j));
             }
-            grid.push(row);
+            obj.data.push(row);
         }
-        return grid;
+
+        obj.get = function(i,j) {
+            console.assert(i >= 0 && i < obj.data.length);
+            console.assert(j >= 0 && j < obj.data[i].length);
+            return obj.data[i][j];
+        }
+        obj.has = function(i,j) {
+            if (!(i >= 0 && i < obj.data.length)) {
+                return false;
+            }
+            if (!(j >= 0 && j < obj.data[i].length)) {
+                return false;
+            }
+            return true;
+        }
+        obj.nrows = function () {
+            return obj.data.length;
+        }
+        obj.ncols = function () {
+            return obj.data[0].length;
+        }
+        return obj;
     }
 
     function tetrimino_make(opts) {
@@ -65,9 +89,9 @@
         // . == Empty
         obj.render_text = function () {
             const text_grid = [];
-            for (let i = 0; i < grid.length; i++) {
+            for (let i = 0; i < grid.nrows(); i++) {
                 const row = [];
-                for (let j = 0; j < grid[i].length; j++) {
+                for (let j = 0; j < grid.ncols(); j++) {
                     row.push(".");
                 }
                 text_grid.push(row);
@@ -84,7 +108,7 @@
             }
             // Render to string.
             let ret = "";
-            for (let i = 0; i < grid.length; i++) {
+            for (let i = 0; i < grid.nrows(); i++) {
                 if (i > 0) ret += "\n";
                 ret += text_grid[i].join("");
             }
