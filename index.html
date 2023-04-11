@@ -61,6 +61,20 @@
             locking: false
         };
 
+        /*
+         * . is the reference point.
+         * O is the origin of rotation.
+         *    
+         *   X      
+         *   O   OX
+         *   .   .      
+         */
+
+        const test_coords = [
+            [{ iOffset: -1, jOffset: 0 }, { iOffset: -2, jOffset: 0 }],
+            [{ iOffset: -1, jOffset: 0 }, { iOffset: -1, jOffset: 1 }]
+        ];
+
         // get_coordinates returns the coordinates of the tetrimino that are currently filled.
         obj.get_coordinates = function () {
             if (obj.type == "test") {
@@ -204,7 +218,7 @@
         game.add_tetrimino(tetrimino_make());
         assert_rendered(game,
             [
-                ".#...",
+                ".##..",
                 ".....",
                 ".....",
                 ".....",
@@ -365,8 +379,8 @@
                 ]);
         }
     }
-    // test_add_tetrimino();
+    test_add_tetrimino();
     // test_gravity();
-    test_lock();
+    // test_lock();
     // Tests ... end
 </script>
