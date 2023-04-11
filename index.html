@@ -62,23 +62,28 @@
         };
 
         /*
-         * . is the reference point.
-         * O is the origin of rotation.
+         * O is the origin.
          *    
-         *   X      
-         *   O   OX
-         *   .   .      
+         *        X
+         *   OX   O
          */
 
         const test_coords = [
-            [{ iOffset: -1, jOffset: 0 }, { iOffset: -2, jOffset: 0 }],
-            [{ iOffset: -1, jOffset: 0 }, { iOffset: -1, jOffset: 1 }]
+            [{ iOffset: 0, jOffset: 0 }, { iOffset: 0, jOffset: 1 }],
+            [{ iOffset: 0, jOffset: 0 }, { iOffset: -1, jOffset: 0 }]
         ];
+
+        let rotation_index = 0;
 
         // get_coordinates returns the coordinates of the tetrimino that are currently filled.
         obj.get_coordinates = function () {
             if (obj.type == "test") {
-                return [{ i: obj.i, j: obj.j }];
+                const offsets = test_coords[rotation_index];
+                let coords = [];
+                offsets.forEach((off) => {
+                    coords.push({ i: obj.i + off.iOffset, j: obj.j + off.jOffset });
+                });
+                return coords;
             } else {
                 console.assert("Don't know how to get_coordinates for type: %s", obj.type);
             }
@@ -153,7 +158,6 @@
                     const coords = t.get_coordinates();
                     for (let i = 0; i < coords.length; i++) {
                         const pair = coords[i];
-                        console.log(pair);
                         const cell = grid.get(pair.i, pair.j);
                         cell.filled = true;
                     }
@@ -185,9 +189,12 @@
             let t = tetrimino;
             if (t) {
                 if (t.type == "test") {
-                    if (t.i >= 0 && t.i < text_grid.length && t.j >= 0 && t.j < text_grid[t.i].length) {
-                        text_grid[t.i][t.j] = "#";
-                    }
+                    const coords = t.get_coordinates();
+                    coords.forEach((pair) => {
+                        if (pair.i >= 0 && pair.i < text_grid.length && pair.j >= 0 && pair.j < text_grid[pair.i].length) {
+                            text_grid[pair.i][pair.j] = "#";
+                        }
+                    });
                 } else {
                     throw "Do not know how to apply tetrimino of type: " + t.type
                 }
@@ -231,7 +238,7 @@
         game.add_tetrimino(tetrimino_make());
         assert_rendered(game,
             [
-                ".#...",
+                ".##..",
                 ".....",
                 ".....",
                 ".....",
@@ -241,7 +248,7 @@
         game.tick_frame();
         assert_rendered(game,
             [
-                ".#...",
+                ".##..",
                 ".....",
                 ".....",
                 ".....",
@@ -252,7 +259,7 @@
         assert_rendered(game,
             [
                 ".....",
-                ".#...",
+                ".##..",
                 ".....",
                 ".....",
                 ".....",
@@ -264,7 +271,7 @@
             game.add_tetrimino(tetrimino_make());
             assert_rendered(game,
                 [
-                    ".#...",
+                    ".##..",
                     ".....",
                     ".....",
                     ".....",
@@ -276,7 +283,7 @@
                 [
                     ".....",
                     ".....",
-                    ".#...",
+                    ".##..",
                     ".....",
                     ".....",
                     "....."
@@ -292,7 +299,7 @@
                 ".....",
                 ".....",
                 ".....",
-                ".#...",
+                ".##..",
                 "....."
             ]);
         game.tick_frame();
@@ -303,7 +310,7 @@
                 ".....",
                 ".....",
                 ".....",
-                ".#..."
+                ".##.."
             ]);
         // Tick 29 frames.
         for (let i = 0; i < 29; i++) game.tick_frame();
@@ -315,7 +322,7 @@
                 ".....",
                 ".....",
                 ".....",
-                ".#..."
+                ".##.."
             ]);
         // Wait another frame.
         game.tick_frame();
@@ -327,7 +334,7 @@
                 ".....",
                 ".....",
                 ".....",
-                ".F..."
+                ".FF.."
             ]);
 
         // Test lock with high gravity.
@@ -340,7 +347,7 @@
                     ".....",
                     ".....",
                     ".....",
-                    ".#...",
+                    ".##..",
                     "....."
                 ]);
             game.tick_frame();
@@ -351,7 +358,7 @@
                     ".....",
                     ".....",
                     ".....",
-                    ".#..."
+                    ".##.."
                 ]);
             // Tick 29 frames.
             for (let i = 0; i < 29; i++) game.tick_frame();
@@ -363,7 +370,7 @@
                     ".....",
                     ".....",
                     ".....",
-                    ".#..."
+                    ".##.."
                 ]);
             // Wait another frame.
             game.tick_frame();
@@ -375,12 +382,12 @@
                     ".....",
                     ".....",
                     ".....",
-                    ".F..."
+                    ".FF.."
                 ]);
         }
     }
     test_add_tetrimino();
-    // test_gravity();
-    // test_lock();
+    test_gravity();
+    test_lock();
     // Tests ... end
 </script>
