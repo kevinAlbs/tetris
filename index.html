@@ -61,24 +61,26 @@
             locking: false
         };
 
-        /*
-         * O is the origin.
-         *    
-         *        X
-         *   OX   O
-         */
 
-        const test_coords = [
-            [{ iOffset: 0, jOffset: 0 }, { iOffset: 0, jOffset: 1 }],
-            [{ iOffset: 0, jOffset: 0 }, { iOffset: -1, jOffset: 0 }]
-        ];
+        const offset_map = {
+            /* Test shape is two blocks.
+             * O is the origin.
+             *
+             *        X
+             *   OX   O
+             */
+            "test": [
+                [{ iOffset: 0, jOffset: 0 }, { iOffset: 0, jOffset: 1 }],
+                [{ iOffset: 0, jOffset: 0 }, { iOffset: -1, jOffset: 0 }]
+            ]
+        }
 
         let rotation_index = 0;
 
         // get_coordinates returns the coordinates of the tetrimino that are currently filled.
         obj.get_coordinates = function () {
-            if (obj.type == "test") {
-                const offsets = test_coords[rotation_index];
+            if (obj.type in offset_map) {
+                const offsets = offset_map[obj.type][rotation_index];
                 let coords = [];
                 offsets.forEach((off) => {
                     coords.push({ i: obj.i + off.iOffset, j: obj.j + off.jOffset });
@@ -86,6 +88,22 @@
                 return coords;
             } else {
                 console.assert("Don't know how to get_coordinates for type: %s", obj.type);
+            }
+        };
+
+        obj.rotate_left = function () {
+            const numOffsets = offset_map[obj.type].length;
+            rotation_index += 1;
+            if (rotation_index >= numOffsets) {
+                rotation_index = 0;
+            }
+        };
+
+        obj.rotate_right = function () {
+            const numOffsets = offset_map[obj.type].length;
+            rotation_index -= 1;
+            if (rotation_index < 0) {
+                rotation_index = numOffsets - 1;
             }
         };
         return obj;
@@ -124,6 +142,19 @@
             console.assert(tetrimino == null);
             tetrimino = t;
         };
+
+        obj.rotate_left = function () {
+            if (tetrimino) {
+                tetrimino.rotate_left();
+            }
+        };
+
+        obj.rotate_right = function () {
+            if (tetrimino) {
+                tetrimino.rotate_right();
+            }
+        };
+
         obj.tick_frame = function () {
             // Tetriminos move at a rate of `gravity` cells per frame.
             let t = tetrimino;
@@ -386,8 +417,33 @@
                 ]);
         }
     }
+
+    function test_rotate() {
+        const game = game_make({ grid: { use_test_grid: true }, gravity: 1 });
+        game.add_tetrimino(tetrimino_make({ i: 1 }));
+        assert_rendered(game,
+            [
+                ".....",
+                ".##..",
+                ".....",
+                ".....",
+                ".....",
+                "....."
+            ]);
+        game.rotate_left();
+        assert_rendered(game,
+            [
+                ".#...",
+                ".#...",
+                ".....",
+                ".....",
+                ".....",
+                "....."
+            ]);
+    }
     test_add_tetrimino();
     test_gravity();
     test_lock();
+    test_rotate();
     // Tests ... end
 </script>
