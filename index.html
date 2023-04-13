@@ -61,8 +61,7 @@
             locking: false
         };
 
-
-        const offset_map = {
+        const rotation_map = {
             /* Test shape is two blocks.
              * O is the origin.
              *
@@ -74,7 +73,7 @@
                 [{ iOffset: 0, jOffset: 0 }, { iOffset: 0, jOffset: 1 }],
                 [{ iOffset: 0, jOffset: 0 }, { iOffset: 1, jOffset: 0 }],
                 [{ iOffset: 0, jOffset: 0 }, { iOffset: 0, jOffset: -1 }],
-                [{ iOffset: 0, jOffset: 0 }, { iOffset: 0, jOffset: 1 }]
+                [{ iOffset: 0, jOffset: 0 }, { iOffset: 1, jOffset: 0 }]
             ]
         }
 
@@ -83,13 +82,21 @@
         // Refer: https://tetris.wiki/Super_Rotation_System
         const kick_map = {
             "test": {
-                "0": {
-                    "left": [{ iOffset: 0, jOffset: 0 }],
-                    "right": [{ iOffset: 0, jOffset: 0 }]
+                0: {
+                    "left": [{ iOffset: 0, jOffset: 0 }, {iOffset: 1, jOffset: 0}],
+                    "right": [{ iOffset: 0, jOffset: 0 }, {iOffset: -1, jOffset: 0}]
                 },
-                "1": {
-                    "left": [{ iOffset: 0, jOffset: 0 }],
-                    "right": [{ iOffset: 0, jOffset: 0 }]
+                1: {
+                    "left": [{ iOffset: 0, jOffset: 0 }, {iOffset: 0, jOffset: -1}],
+                    "right": [{ iOffset: 0, jOffset: 0 }, {iOffset: 0, jOffset: 1}]
+                },
+                2: {
+                    "left": [{ iOffset: 0, jOffset: 0 }, {iOffset: -1, jOffset: 0}],
+                    "right": [{ iOffset: 0, jOffset: 0 }, {iOffset: 1, jOffset: 0}]
+                },
+                3: {
+                    "left": [{ iOffset: 0, jOffset: 0 }, {iOffset: 0, jOffset: 1}],
+                    "right": [{ iOffset: 0, jOffset: 0 }, {iOffset: 0, jOffset: -1}]
                 }
             }
         };
@@ -98,8 +105,8 @@
 
         // get_coordinates returns the coordinates of the tetrimino that are currently filled.
         obj.get_coordinates = function () {
-            if (obj.type in offset_map) {
-                const offsets = offset_map[obj.type][rotation_index];
+            if (obj.type in rotation_map) {
+                const offsets = rotation_map[obj.type][rotation_index];
                 let coords = [];
                 offsets.forEach((off) => {
                     coords.push({ i: obj.i + off.iOffset, j: obj.j + off.jOffset });
@@ -110,20 +117,70 @@
             }
         };
 
-        obj.rotate_left = function () {
-            const numOffsets = offset_map[obj.type].length;
-            rotation_index += 1;
-            if (rotation_index >= numOffsets) {
-                rotation_index = 0;
+        // try_rotate tries to rotate in direction `dir`.
+        // All kicks are tried in sequence. If all kicks fail, rotation does not occur.
+        function try_rotate (dir, grid) {
+            console.assert (dir == "left" || dir == "right", "expected 'left' or 'right', got %s", dir);
+            const rotations = rotation_map[obj.type];
+            let target_index = dir == "right" ? rotation_index + 1 : rotation_index - 1;
+            if (target_index < 0) {
+                target_index = rotations.length - 1;
+            } else if (target_index > rotations.length - 1) {
+                target_index = 0;
             }
+
+            console.assert(obj.type in kick_map);
+            console.assert(rotation_index in kick_map[obj.type]);
+            console.assert(dir in kick_map[obj.type][rotation_index]);
+
+            // can_rotate checks if applying `kick` results in a successful rotation.
+            function can_rotate (kick) {
+                const rotation = rotations[target_index];
+                let all_empty = true;
+                for (let i = 0; i < rotation.length; i++) {
+                    const pair = {
+                        i: obj.i + kick.iOffset + rotation[i].iOffset,
+                        j: obj.j + kick.jOffset + rotation[i].jOffset,
+                    };
+                    if (!grid.has (pair.i, pair.j)) {
+                        all_empty = false;
+                        break;
+                    }
+                    if (grid.get(pair.i, pair.j).filled) {
+                        all_empty = false;
+                        break;
+                    }
+                }
+                return all_empty;
+            }
+
+            // Try to apply each kick in sequence until rotation succeeds.
+            let kick_to_apply = null;
+            for (let i = 0; i < kick_map[obj.type][rotation_index][dir].length; i++) {
+                const kick = kick_map[obj.type][rotation_index][dir][i];
+                if (can_rotate(kick)) {
+                    kick_to_apply = kick;
+                    break;
+                }
+            }
+            
+            if (kick_to_apply === null) {
+                return;
+            }
+            
+            // Apply kick to position.
+            obj.i += kick_to_apply.iOffset;
+            obj.j += kick_to_apply.jOffset;
+            // Apply rotation.
+            rotation_index = target_index;
+        }
+
+        obj.rotate_left = function (grid) {
+            try_rotate ("left", grid);
         };
 
-        obj.rotate_right = function () {
-            const numOffsets = offset_map[obj.type].length;
-            rotation_index -= 1;
-            if (rotation_index < 0) {
-                rotation_index = numOffsets - 1;
-            }
+        obj.rotate_right = function (grid) {
+            try_rotate ("right", grid);
         };
         return obj;
     }
@@ -164,13 +221,13 @@
 
         obj.rotate_left = function () {
             if (tetrimino) {
-                tetrimino.rotate_left();
+                tetrimino.rotate_left(grid);
             }
         };
 
         obj.rotate_right = function () {
             if (tetrimino) {
-                tetrimino.rotate_right();
+                tetrimino.rotate_right(grid);
             }
         };
 
@@ -451,7 +508,7 @@
                     ".....",
                     "....."
                 ]);
-            game.rotate_left();
+            game.rotate_right();
             assert_rendered(game,
                 [
                     ".....",
@@ -475,7 +532,7 @@
                     ".....",
                     "....."
                 ]);
-            game.rotate_left();
+            game.rotate_right();
             assert_rendered(game,
                 [
                     "##...",
@@ -484,6 +541,30 @@
                     ".....",
                     ".....",
                     "....."
+                ]);
+        }
+        // Test floor kick.
+        {
+            const game = game_make({ grid: { use_test_grid: true }, gravity: 1 });
+            game.add_tetrimino(tetrimino_make({ i: 5, j: 1, rotation_index: 0 }));
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".##.."
+                ]);
+            game.rotate_right();
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".#...",
+                    ".#..."
                 ]);
         }
         // Test failed rotation.
