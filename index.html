@@ -53,8 +53,8 @@
     function tetrimino_make(opts) {
         opts = opts || {};
         const obj = {
-            i: opts.i || 0,
-            j: opts.j || 1,
+            i: opts.i !== undefined ? opts.i : 0,
+            j: opts.j !== undefined ? opts.j : 1,
             type: opts.type || "test",
             gravity_counter: 0,
             lock_timer: 0,
@@ -66,16 +66,35 @@
             /* Test shape is two blocks.
              * O is the origin.
              *
+             *                 X
+             *   OX   O   XO   O
              *        X
-             *   OX   O
              */
             "test": [
                 [{ iOffset: 0, jOffset: 0 }, { iOffset: 0, jOffset: 1 }],
-                [{ iOffset: 0, jOffset: 0 }, { iOffset: -1, jOffset: 0 }]
+                [{ iOffset: 0, jOffset: 0 }, { iOffset: 1, jOffset: 0 }],
+                [{ iOffset: 0, jOffset: 0 }, { iOffset: 0, jOffset: -1 }],
+                [{ iOffset: 0, jOffset: 0 }, { iOffset: 0, jOffset: 1 }]
             ]
         }
 
-        let rotation_index = 0;
+        // kick_map determines which offsets are tested when a rotation fails.
+        // kick_map maps the current rotation_index and the desired direction to a sequence of kick values.
+        // Refer: https://tetris.wiki/Super_Rotation_System
+        const kick_map = {
+            "test": {
+                "0": {
+                    "left": [{ iOffset: 0, jOffset: 0 }],
+                    "right": [{ iOffset: 0, jOffset: 0 }]
+                },
+                "1": {
+                    "left": [{ iOffset: 0, jOffset: 0 }],
+                    "right": [{ iOffset: 0, jOffset: 0 }]
+                }
+            }
+        };
+
+        let rotation_index = opts.rotation_index || 0;
 
         // get_coordinates returns the coordinates of the tetrimino that are currently filled.
         obj.get_coordinates = function () {
@@ -419,27 +438,81 @@
     }
 
     function test_rotate() {
-        const game = game_make({ grid: { use_test_grid: true }, gravity: 1 });
-        game.add_tetrimino(tetrimino_make({ i: 1 }));
-        assert_rendered(game,
-            [
-                ".....",
-                ".##..",
-                ".....",
-                ".....",
-                ".....",
-                "....."
-            ]);
-        game.rotate_left();
-        assert_rendered(game,
-            [
-                ".#...",
-                ".#...",
-                ".....",
-                ".....",
-                ".....",
-                "....."
-            ]);
+        // Test basic rotate.
+        {
+            const game = game_make({ grid: { use_test_grid: true }, gravity: 1 });
+            game.add_tetrimino(tetrimino_make({ i: 1 }));
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".##..",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "....."
+                ]);
+            game.rotate_left();
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".#...",
+                    ".#...",
+                    ".....",
+                    ".....",
+                    "....."
+                ]);
+        }
+        // Test wall kick.
+        {
+            const game = game_make({ grid: { use_test_grid: true }, gravity: 1 });
+            game.add_tetrimino(tetrimino_make({ i: 0, j: 0, rotation_index: 1 }));
+            assert_rendered(game,
+                [
+                    "#....",
+                    "#....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "....."
+                ]);
+            game.rotate_left();
+            assert_rendered(game,
+                [
+                    "##...",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "....."
+                ]);
+        }
+        // Test failed rotation.
+        {
+            const game = game_make({ grid: { use_test_grid: true }, gravity: 1 });
+            const grid = game.get_grid();
+            grid.get(4, 1).filled = true;
+            grid.get(5, 1).filled = true;
+            game.add_tetrimino(tetrimino_make({ i: 4, j: 0, rotation_index: 1 }));
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "#F...",
+                    "#F..."
+                ]);
+            game.rotate_left();
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "#F...",
+                    "#F..."
+                ]);
+        }
     }
     test_add_tetrimino();
     test_gravity();
