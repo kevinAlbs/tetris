@@ -83,20 +83,20 @@
         const kick_map = {
             "test": {
                 0: {
-                    "left": [{ iOffset: 0, jOffset: 0 }, {iOffset: 1, jOffset: 0}],
-                    "right": [{ iOffset: 0, jOffset: 0 }, {iOffset: -1, jOffset: 0}]
+                    "left": [{ iOffset: 0, jOffset: 0 }, { iOffset: 1, jOffset: 0 }],
+                    "right": [{ iOffset: 0, jOffset: 0 }, { iOffset: -1, jOffset: 0 }]
                 },
                 1: {
-                    "left": [{ iOffset: 0, jOffset: 0 }, {iOffset: 0, jOffset: -1}],
-                    "right": [{ iOffset: 0, jOffset: 0 }, {iOffset: 0, jOffset: 1}]
+                    "left": [{ iOffset: 0, jOffset: 0 }, { iOffset: 0, jOffset: -1 }],
+                    "right": [{ iOffset: 0, jOffset: 0 }, { iOffset: 0, jOffset: 1 }]
                 },
                 2: {
-                    "left": [{ iOffset: 0, jOffset: 0 }, {iOffset: -1, jOffset: 0}],
-                    "right": [{ iOffset: 0, jOffset: 0 }, {iOffset: 1, jOffset: 0}]
+                    "left": [{ iOffset: 0, jOffset: 0 }, { iOffset: -1, jOffset: 0 }],
+                    "right": [{ iOffset: 0, jOffset: 0 }, { iOffset: 1, jOffset: 0 }]
                 },
                 3: {
-                    "left": [{ iOffset: 0, jOffset: 0 }, {iOffset: 0, jOffset: 1}],
-                    "right": [{ iOffset: 0, jOffset: 0 }, {iOffset: 0, jOffset: -1}]
+                    "left": [{ iOffset: 0, jOffset: 0 }, { iOffset: 0, jOffset: 1 }],
+                    "right": [{ iOffset: 0, jOffset: 0 }, { iOffset: 0, jOffset: -1 }]
                 }
             }
         };
@@ -119,8 +119,8 @@
 
         // try_rotate tries to rotate in direction `dir`.
         // All kicks are tried in sequence. If all kicks fail, rotation does not occur.
-        function try_rotate (dir, grid) {
-            console.assert (dir == "left" || dir == "right", "expected 'left' or 'right', got %s", dir);
+        function try_rotate(dir, grid) {
+            console.assert(dir == "left" || dir == "right", "expected 'left' or 'right', got %s", dir);
             const rotations = rotation_map[obj.type];
             let target_index = dir == "right" ? rotation_index + 1 : rotation_index - 1;
             if (target_index < 0) {
@@ -134,7 +134,7 @@
             console.assert(dir in kick_map[obj.type][rotation_index]);
 
             // can_rotate checks if applying `kick` results in a successful rotation.
-            function can_rotate (kick) {
+            function can_rotate(kick) {
                 const rotation = rotations[target_index];
                 let all_empty = true;
                 for (let i = 0; i < rotation.length; i++) {
@@ -142,7 +142,7 @@
                         i: obj.i + kick.iOffset + rotation[i].iOffset,
                         j: obj.j + kick.jOffset + rotation[i].jOffset,
                     };
-                    if (!grid.has (pair.i, pair.j)) {
+                    if (!grid.has(pair.i, pair.j)) {
                         all_empty = false;
                         break;
                     }
@@ -163,11 +163,11 @@
                     break;
                 }
             }
-            
+
             if (kick_to_apply === null) {
                 return;
             }
-            
+
             // Apply kick to position.
             obj.i += kick_to_apply.iOffset;
             obj.j += kick_to_apply.jOffset;
@@ -176,11 +176,11 @@
         }
 
         obj.rotate_left = function (grid) {
-            try_rotate ("left", grid);
+            try_rotate("left", grid);
         };
 
         obj.rotate_right = function (grid) {
-            try_rotate ("right", grid);
+            try_rotate("right", grid);
         };
         return obj;
     }
