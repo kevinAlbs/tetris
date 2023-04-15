@@ -258,6 +258,7 @@
                 // Assume "no". Rationale: this permits pieces to be rotated indefinitely.
             }
 
+            let fill_occurred = false;
             if (t.locking) {
                 t.lock_timer--;
                 if (t.lock_timer == 0) {
@@ -270,6 +271,35 @@
                     }
                     // Reset tetrimino.
                     tetrimino = null;
+                    fill_occurred = true;
+                }
+            }
+
+            if (fill_occurred) {
+                // Check for line clears.
+                for (let i = 0; i < grid.nrows(); i++) {
+                    let can_be_cleared = true;
+                    for (let j = 0; j < grid.ncols(); j++) {
+                        if (!grid.get(i, j).filled) {
+                            can_be_cleared = false;
+                            break;
+                        }
+                    }
+                    if (can_be_cleared) {
+                        // Clear, and shift cell fills down.
+                        console.log("row " + i + " can be cleared");
+                        for (let ip = i; ip >= 0; ip--) {
+                            for (let jp = 0; jp < grid.ncols(); jp++) {
+                                const to = grid.get(ip, jp);
+                                if (ip == 0) {
+                                    to.filed = false;
+                                } else {
+                                    const from = grid.get(ip - 1, jp);
+                                    to.filled = from.filled;
+                                }
+                            }
+                        }
+                    }
                 }
             }
         };
@@ -595,9 +625,66 @@
                 ]);
         }
     }
+
+    function test_line_clear() {
+        function fill_region(grid, start, end) {
+            console.assert(start.i <= end.i);
+            console.assert(start.j <= end.j);
+            for (let i = start.i; i <= end.i; i++) {
+                for (let j = start.j; j <= end.j; j++) {
+                    grid.get(i, j).filled = true;
+                }
+            }
+        }
+        // Test single line clear.
+        {
+            const game = game_make({ grid: { use_test_grid: true }, gravity: 1 });
+            const grid = game.get_grid();
+            fill_region(grid, { i: 5, j: 0 }, { i: 5, j: 3 });
+            game.add_tetrimino(tetrimino_make({ i: 3, j: 4, rotation_index: 1 }));
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".....",
+                    ".....",
+                    "....#",
+                    "....#",
+                    "FFFF."
+                ]);
+            game.tick_frame();
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "....#",
+                    "FFFF#"
+                ]);
+            // Tick 30 frames to lock.
+            for (let i = 0; i < 30; i++) {
+                game.tick_frame();
+            }
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "....F"
+                ]);
+
+        }
+        // Test split clear (TODO: need more pieces).
+        {
+
+        }
+    }
     test_add_tetrimino();
     test_gravity();
     test_lock();
     test_rotate();
+    test_line_clear();
     // Tests ... end
 </script>
