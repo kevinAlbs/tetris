@@ -182,6 +182,42 @@
         obj.rotate_right = function (grid) {
             try_rotate("right", grid);
         };
+
+        // try_move tries to move in direction `dir`.
+        function try_move(dir, grid) {
+            let jOffset;
+            if (dir == "left") {
+                jOffset = -1;
+            }
+            else if (dir == "right") {
+                jOffset = +1;
+            }
+            else {
+                throw "Do not know how to move in direction '" + dir + "'";
+            }
+
+            const coords = obj.get_coordinates();
+            for (let i = 0; i < coords.length; i++) {
+                const pair = coords[i];
+                if (!grid.has(pair.i, pair.j + jOffset)) {
+                    return;
+                }
+                const cell = grid.get(pair.i, pair.j + jOffset);
+                if (cell.filled) {
+                    return;
+                }
+            }
+            // All destination cells are clear. Apply move.
+            obj.j += jOffset;
+        }
+
+        obj.move_left = function (grid) {
+            try_move("left", grid);
+        };
+
+        obj.move_right = function (grid) {
+            try_move("right", grid);
+        };
         return obj;
     }
 
@@ -228,6 +264,18 @@
         obj.rotate_right = function () {
             if (tetrimino) {
                 tetrimino.rotate_right(grid);
+            }
+        };
+
+        obj.move_left = function () {
+            if (tetrimino) {
+                tetrimino.move_left(grid);
+            }
+        };
+
+        obj.move_right = function () {
+            if (tetrimino) {
+                tetrimino.move_right(grid);
             }
         };
 
@@ -681,10 +729,61 @@
 
         }
     }
+
+    function test_move() {
+        // Test move left / right.
+        {
+            const game = game_make({ grid: { use_test_grid: true }, gravity: 1 });
+            const grid = game.get_grid();
+            game.add_tetrimino(tetrimino_make({ i: 0, j: 1, rotation_index: 0 }));
+            assert_rendered(game,
+                [
+                    ".##..",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "....."
+                ]);
+            game.move_left();
+            assert_rendered(game,
+                [
+                    "##...",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "....."
+                ]);
+            // Test that cannot move beyond wall.
+            game.move_left();
+            assert_rendered(game,
+                [
+                    "##...",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "....."
+                ]);
+            // Test that cannot move beyond wall.
+            game.move_right();
+            assert_rendered(game,
+                [
+                    ".##..",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "....."
+                ]);
+        }
+    }
     test_add_tetrimino();
     test_gravity();
     test_lock();
     test_rotate();
     test_line_clear();
+    test_move();
     // Tests ... end
 </script>
