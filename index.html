@@ -250,6 +250,10 @@
             return false;
         }
 
+        let events = {
+            hard_drop: false
+        };
+
         obj.add_tetrimino = function (t) {
             console.assert(tetrimino == null);
             tetrimino = t;
@@ -279,9 +283,28 @@
             }
         };
 
+        obj.hard_drop = function () {
+            events.hard_drop = true;
+        }
+
         obj.tick_frame = function () {
-            // Tetriminos move at a rate of `gravity` cells per frame.
             let t = tetrimino;
+
+            // Handle events.
+            if (events.hard_drop) {
+                if (t) {
+                    while (!is_colliding_below()) {
+                        t.i++;
+                    }
+                    t.locking = true;
+                    t.lock_timer = 1; // Lock this frame.
+                }
+            }
+
+            events.hard_drop = false;
+
+            // Apply gravity.
+            // Tetriminos move at a rate of `gravity` cells per frame.
             if (t) {
                 t.gravity_counter += opts.gravity;
                 while (t.gravity_counter >= 1) {
@@ -295,6 +318,7 @@
                 }
             }
 
+            // Start lock timer.
             // If Tetrimino is colliding with block below, start the lock timer.
             if (is_colliding_below()) {
                 if (!t.locking) {
@@ -306,6 +330,7 @@
                 // Assume "no". Rationale: this permits pieces to be rotated indefinitely.
             }
 
+            // Apply lock.
             let fill_occurred = false;
             if (t.locking) {
                 t.lock_timer--;
@@ -323,8 +348,8 @@
                 }
             }
 
+            // Check for line clears.
             if (fill_occurred) {
-                // Check for line clears.
                 for (let i = 0; i < grid.nrows(); i++) {
                     let can_be_cleared = true;
                     for (let j = 0; j < grid.ncols(); j++) {
@@ -779,11 +804,41 @@
                 ]);
         }
     }
+
+    function test_hard_drop() {
+        // Test move left / right.
+        {
+            const game = game_make({ grid: { use_test_grid: true }, gravity: 1 });
+            const grid = game.get_grid();
+            game.add_tetrimino(tetrimino_make({ i: 0, j: 1, rotation_index: 0 }));
+            assert_rendered(game,
+                [
+                    ".##..",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "....."
+                ]);
+            game.hard_drop();
+            game.tick_frame();
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".FF.."
+                ]);
+        }
+    }
     test_add_tetrimino();
     test_gravity();
     test_lock();
     test_rotate();
     test_line_clear();
     test_move();
+    test_hard_drop();
     // Tests ... end
 </script>
