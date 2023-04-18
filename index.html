@@ -251,6 +251,10 @@
         }
 
         let events = {
+            rotate_left: false,
+            rotate_right: false,
+            move_left: false,
+            move_right: false,
             hard_drop: false
         };
 
@@ -260,27 +264,19 @@
         };
 
         obj.rotate_left = function () {
-            if (tetrimino) {
-                tetrimino.rotate_left(grid);
-            }
+            events.rotate_left = true;
         };
 
         obj.rotate_right = function () {
-            if (tetrimino) {
-                tetrimino.rotate_right(grid);
-            }
+            events.rotate_right = true;
         };
 
         obj.move_left = function () {
-            if (tetrimino) {
-                tetrimino.move_left(grid);
-            }
+            events.move_left = true;
         };
 
         obj.move_right = function () {
-            if (tetrimino) {
-                tetrimino.move_right(grid);
-            }
+            events.move_right = true;
         };
 
         obj.hard_drop = function () {
@@ -291,6 +287,26 @@
             let t = tetrimino;
 
             // Handle events.
+            if (events.rotate_left) {
+                if (t) {
+                    t.rotate_left(grid);
+                }
+            }
+            if (events.rotate_right) {
+                if (t) {
+                    t.rotate_right(grid);
+                }
+            }
+            if (events.move_left) {
+                if (t) {
+                    t.move_left(grid);
+                }
+            }
+            if (events.move_right) {
+                if (t) {
+                    t.move_right(grid);
+                }
+            }
             if (events.hard_drop) {
                 if (t) {
                     while (!is_colliding_below()) {
@@ -300,8 +316,13 @@
                     t.lock_timer = 1; // Lock this frame.
                 }
             }
-
-            events.hard_drop = false;
+            events = {
+                rotate_left: false,
+                rotate_right: false,
+                move_left: false,
+                move_right: false,
+                hard_drop: false
+            };
 
             // Apply gravity.
             // Tetriminos move at a rate of `gravity` cells per frame.
@@ -360,7 +381,6 @@
                     }
                     if (can_be_cleared) {
                         // Clear, and shift cell fills down.
-                        console.log("row " + i + " can be cleared");
                         for (let ip = i; ip >= 0; ip--) {
                             for (let jp = 0; jp < grid.ncols(); jp++) {
                                 const to = grid.get(ip, jp);
@@ -600,7 +620,7 @@
     function test_rotate() {
         // Test basic rotate.
         {
-            const game = game_make({ grid: { use_test_grid: true }, gravity: 1 });
+            const game = game_make({ grid: { use_test_grid: true }, gravity: .5 });
             game.add_tetrimino(tetrimino_make({ i: 1 }));
             assert_rendered(game,
                 [
@@ -612,6 +632,7 @@
                     "....."
                 ]);
             game.rotate_right();
+            game.tick_frame();
             assert_rendered(game,
                 [
                     ".....",
@@ -624,7 +645,7 @@
         }
         // Test wall kick.
         {
-            const game = game_make({ grid: { use_test_grid: true }, gravity: 1 });
+            const game = game_make({ grid: { use_test_grid: true }, gravity: .5 });
             game.add_tetrimino(tetrimino_make({ i: 0, j: 0, rotation_index: 1 }));
             assert_rendered(game,
                 [
@@ -636,6 +657,7 @@
                     "....."
                 ]);
             game.rotate_right();
+            game.tick_frame();
             assert_rendered(game,
                 [
                     "##...",
@@ -648,7 +670,7 @@
         }
         // Test floor kick.
         {
-            const game = game_make({ grid: { use_test_grid: true }, gravity: 1 });
+            const game = game_make({ grid: { use_test_grid: true }, gravity: .5 });
             game.add_tetrimino(tetrimino_make({ i: 5, j: 1, rotation_index: 0 }));
             assert_rendered(game,
                 [
@@ -660,6 +682,7 @@
                     ".##.."
                 ]);
             game.rotate_right();
+            game.tick_frame();
             assert_rendered(game,
                 [
                     ".....",
@@ -758,7 +781,7 @@
     function test_move() {
         // Test move left / right.
         {
-            const game = game_make({ grid: { use_test_grid: true }, gravity: 1 });
+            const game = game_make({ grid: { use_test_grid: true }, gravity: .1 });
             const grid = game.get_grid();
             game.add_tetrimino(tetrimino_make({ i: 0, j: 1, rotation_index: 0 }));
             assert_rendered(game,
@@ -771,6 +794,7 @@
                     "....."
                 ]);
             game.move_left();
+            game.tick_frame();
             assert_rendered(game,
                 [
                     "##...",
@@ -782,6 +806,7 @@
                 ]);
             // Test that cannot move beyond wall.
             game.move_left();
+            game.tick_frame();
             assert_rendered(game,
                 [
                     "##...",
@@ -793,6 +818,7 @@
                 ]);
             // Test that cannot move beyond wall.
             game.move_right();
+            game.tick_frame();
             assert_rendered(game,
                 [
                     ".##..",
