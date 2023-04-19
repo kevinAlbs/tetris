@@ -310,6 +310,9 @@
                 }
             }
             if (events.move_left) {
+                if (moving !== null) {
+                    // If moving in same direction, start delayed auto shift sequence.
+                }
                 if (t) {
                     t.move_left(grid);
                 }
@@ -840,6 +843,83 @@
             assert_rendered(game,
                 [
                     ".##..",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "....."
+                ]);
+        }
+        // Test delayed auto shift.
+        {
+            const game = game_make({ grid: { use_test_grid: true }, gravity: .1 });
+            const grid = game.get_grid();
+            game.add_tetrimino(tetrimino_make({ i: 0, j: 3, rotation_index: 0 }));
+            assert_rendered(game,
+                [
+                    "...##",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "....."
+                ]);
+            game.move_left();
+            game.tick_frame();
+            assert_rendered(game,
+                [
+                    "..##.",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "....."
+                ]);
+            // After 9 frames, no move has occurred yet.
+            for (let i = 0; i < 9; i++) {
+                game.move_left();
+                game.tick_frame();
+            }
+            assert_rendered(game,
+                [
+                    "..##.",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "....."
+                ]);
+            // After 10th frame, enter Delayed Auto Shift.
+            game.move_left();
+            game.tick_frame();
+            assert_rendered(game,
+                [
+                    ".##..",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "....."
+                ]);
+            // In Delayed Auto Shift, move every 3 frames.
+            for (let i = 0; i < 2; i++) {
+                game.move_left();
+                game.tick_frame();
+            }
+            assert_rendered(game,
+                [
+                    ".##..",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "....."
+                ]);
+            game.move_left();
+            game.tick_frame();
+            assert_rendered(game,
+                [
+                    "##...",
                     ".....",
                     ".....",
                     ".....",
