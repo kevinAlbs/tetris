@@ -143,6 +143,27 @@
         let das_repeat_frame_countdown = 0;
         const kDASNone = 0, kDASWantRight = 1, kDASRight = 2, kDASWantLeft = 3, kDASLeft = 4;
         let das_state = kDASNone;
+        let total_lines_cleared = 0;
+        let cleared_300 = false;
+
+        obj.get_level = function () {
+            // Level increases every 10 lines cleared.
+            return 1 + Math.floor(total_lines_cleared / 10);
+        }
+
+        obj.is_ended = function () {
+            return total_lines_cleared >= 300;
+        }
+
+        obj.get_gravity = function () {
+            // When the level increases, so does the gravity.
+            // The gravity reaches its maximum 20G at level 20.
+            // Q: What is the starting gravity?
+            // A:
+            // Q: How much is gravity expected to increase each level?
+            // A:
+            // TODO.
+        }
 
         // is_colliding_below returns true if tetrimino has a filled cell or floor below.
         function is_colliding_below() {
@@ -450,6 +471,7 @@
 
             // Check for line clears.
             if (fill_occurred) {
+                let lines_cleared = 0;
                 for (let i = 0; i < grid.nrows(); i++) {
                     let can_be_cleared = true;
                     for (let j = 0; j < grid.ncols(); j++) {
@@ -471,7 +493,12 @@
                                 }
                             }
                         }
+                        lines_cleared++;
                     }
+                }
+
+                if (lines_cleared > 0) {
+                    total_lines_cleared += lines_cleared;
                 }
             }
         };
@@ -1085,6 +1112,85 @@
 
         }
     }
+    function test_levels() {
+        // fill_bottom_row unfills all cells and fills all in bottom row except left-most.
+        function fill_bottom_row(grid) {
+            // Clear.
+            for (let i = 0; i < grid.nrows(); i++) {
+                for (let j = 0; j < grid.ncols(); j++) {
+                    const cell = grid.get(i, j);
+                    cell.filled = false;
+                }
+            }
+
+            // Fill all in bottom row but bottom left.
+            for (let j = 1; j < grid.ncols(); j++) {
+                const cell = grid.get(grid.nrows() - 1, j);
+                cell.filled = true;
+            }
+        }
+
+        function clear_one_line(game) {
+            // Assume no tetrimino is added.
+            game.add_tetrimino(tetrimino_make({ i: 0, j: 0, rotation_index: 1 }));
+            fill_bottom_row(game.get_grid());
+            assert_rendered(game,
+                [
+                    "#....",
+                    "#....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".FFFF"
+                ]);
+            game.hard_drop();
+            game.tick_frame();
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "F...."
+                ]);
+        }
+
+        // Test level increases every 10 lines cleared.
+        {
+            const game = game_make({ grid: { use_test_grid: true }, gravity: 1 });
+            const grid = game.get_grid();
+            for (let i = 0; i < 9; i++) {
+                clear_one_line(game);
+            }
+            console.assert(game.get_level() == 1, "expected level 1, got %d", game.get_level());
+            clear_one_line(game);
+            console.assert(game.get_level() == 2, "expected level 2, got %d", game.get_level());
+            for (let i = 0; i < 10; i++) {
+                clear_one_line(game);
+            }
+            console.assert(game.get_level() == 3, "expected level 3, got %d", game.get_level());
+        }
+        // Test game ends at 300 lines cleared.
+        {
+            const game = game_make({ grid: { use_test_grid: true }, gravity: 1 });
+            const grid = game.get_grid();
+            for (let i = 0; i < 299; i++) {
+                clear_one_line(game);
+            }
+            console.assert(!game.is_ended());
+            clear_one_line(game);
+            console.assert(game.is_ended());
+        }
+        // Test gravity caps at 20G.
+        {
+            // TODO.
+        }
+        // Test after 20G, lock delay decreases (TODO: by how much?)
+        {
+            // TODO.
+        }
+    }
     test_add_tetrimino();
     test_gravity();
     test_lock();
@@ -1093,5 +1199,6 @@
     test_move();
     test_hard_drop();
     test_soft_drop();
+    test_levels();
     // Tests ... end
 </script>
