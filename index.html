@@ -137,6 +137,12 @@
         let gravity_counter = 0;
         let lock_timer = 0;
         let locking = false;
+        const kDASDelayFrames = 10;
+        let das_delay_frame_countdown = 0;
+        const kDASRepeatFrames = 3;
+        let das_repeat_frame_countdown = 0;
+        const kDASNone = 0, kDASWantRight = 1, kDASRight = 2, kDASWantLeft = 3, kDASLeft = 4;
+        let das_state = kDASNone;
 
         // is_colliding_below returns true if tetrimino has a filled cell or floor below.
         function is_colliding_below() {
@@ -309,14 +315,71 @@
             }
             if (events.move_left) {
                 if (t) {
-                    try_move("left");
+                    // Handle Delayed Auto Shift (DAS)
+                    switch (das_state) {
+                        case kDASRight:
+                        case kDASWantRight:
+                        case kDASNone:
+                            // User was moving right or not moving. Make immediate move and start DAS sequence.
+                            try_move("left");
+                            das_state = kDASWantLeft;
+                            das_delay_frame_countdown = kDASDelayFrames;
+                            break;
+                        case kDASWantLeft:
+                            das_delay_frame_countdown--;
+                            if (das_delay_frame_countdown <= 0) {
+                                // Delay has completed. Begin repeating.
+                                try_move("left");
+                                das_state = kDASLeft;
+                                das_repeat_frame_countdown = kDASRepeatFrames;
+                            }
+                            break;
+                        case kDASLeft:
+                            das_repeat_frame_countdown--;
+                            if (das_repeat_frame_countdown <= 0) {
+                                try_move("left");
+                                das_repeat_frame_countdown = kDASRepeatFrames;
+                            }
+                            break;
+                    }
                 }
             }
             if (events.move_right) {
                 if (t) {
-                    try_move("right");
+                    // Handle Delayed Auto Shift (DAS)
+                    switch (das_state) {
+                        case kDASLeft:
+                        case kDASWantLeft:
+                        case kDASNone:
+                            // User was moving left or not moving. Make immediate move and start DAS sequence.
+                            try_move("right");
+                            das_state = kDASWantRight;
+                            das_delay_frame_countdown = kDASDelayFrames;
+                            break;
+                        case kDASWantRight:
+                            das_delay_frame_countdown--;
+                            if (das_delay_frame_countdown <= 0) {
+                                // Delay has completed. Begin repeating.
+                                try_move("right");
+                                das_state = kDASRight;
+                                das_repeat_frame_countdown = kDASRepeatFrames;
+                            }
+                            break;
+                        case kDASRight:
+                            das_repeat_frame_countdown--;
+                            if (das_repeat_frame_countdown <= 0) {
+                                try_move("right");
+                                das_repeat_frame_countdown = kDASRepeatFrames;
+                            }
+                            break;
+                    }
                 }
             }
+
+            if (!events.move_left && !events.move_right) {
+                das_state = kDASNone;
+            }
+
             if (events.hard_drop) {
                 if (t) {
                     while (!is_colliding_below()) {
@@ -846,8 +909,8 @@
                 ]);
         }
         // Test delayed auto shift.
-        if (false) {
-            const game = game_make({ grid: { use_test_grid: true }, gravity: .1 });
+        {
+            const game = game_make({ grid: { use_test_grid: true }, gravity: .01 });
             const grid = game.get_grid();
             game.add_tetrimino(tetrimino_make({ i: 0, j: 3, rotation_index: 0 }));
             assert_rendered(game,
