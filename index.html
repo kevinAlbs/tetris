@@ -501,7 +501,6 @@
                 if (!locking) {
                     locking = true;
                     lock_timer_ms = get_lock_delay_ms() + kMSPerFrame; // Add 1 frame so locking state excludes current frame.
-                    console.log("locking with delay " + get_lock_delay_ms());
                 }
             } else {
                 // TODO: if tetrimino was locking, and is rotated out, is locking expected to reset?
