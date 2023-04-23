@@ -191,7 +191,7 @@
             }
             console.assert(level in g_map);
             return g_map[level];
-        };
+        }
 
         // is_colliding_below returns true if tetrimino has a filled cell or floor below.
         function is_colliding_below() {
@@ -1229,6 +1229,10 @@
             }
             console.assert(game.get_level() == 21, "expected level 21, got %d", game.get_level());
             console.assert(game.get_gravity() == 20, `expected gravity 20, got ${game.get_gravity()}`);
+        }
+        // Test after 20G, lock delay decreases (TODO: by how much?)
+        {
+            // TODO.
         }
     }
     test_add_tetrimino();
