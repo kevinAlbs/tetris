@@ -133,7 +133,7 @@
         // tetrimino is the active tetrimino.
         let tetrimino = null;
         const grid = grid_make(opts.grid || {});
-        let gravity = opts.gravity || .1;
+        let fixed_gravity = opts.fixed_gravity;
         let gravity_counter = 0;
         let lock_timer = 0;
         let locking = false;
@@ -156,13 +156,41 @@
         }
 
         obj.get_gravity = function () {
+            if (fixed_gravity) {
+                return fixed_gravity;
+            }
             // When the level increases, so does the gravity.
             // The gravity reaches its maximum 20G at level 20.
-            // Q: What is the starting gravity?
-            // A:
-            // Q: How much is gravity expected to increase each level?
-            // A:
-            // TODO.
+            const level = obj.get_level();
+            if (level >= 20) {
+                return 20;
+            }
+            const g_map = {
+                // Values 1-15 are copied from: https://harddrop.com/wiki/Tetris_Worlds
+                1: 0.01667,
+                2: 0.021017,
+                3: 0.026977,
+                4: 0.035256,
+                5: 0.04693,
+                6: 0.06361,
+                7: 0.0879,
+                8: 0.1236,
+                9: 0.1775,
+                10: 0.2598,
+                11: 0.388,
+                12: 0.59,
+                13: 0.92,
+                14: 1.46,
+                15: 2.36,
+                // Values 15-18 are computed from (0.8-((Level-1)*0.007))(Level-1)
+                16: 3.9090991031125726,
+                17: 6.613536242572853,
+                18: 11.437940870718618,
+                // Value 19 is a fixed "20" since result of formula is greater than 20.
+                19: 20
+            }
+            console.assert(level in g_map);
+            return g_map[level];
         }
 
         // is_colliding_below returns true if tetrimino has a filled cell or floor below.
@@ -418,6 +446,7 @@
             // Apply gravity.
             // Tetriminos move at a rate of `gravity` cells per frame.
             if (t) {
+                let gravity = obj.get_gravity();
                 // From https://tetris.wiki/Drop
                 // "Soft dropping a tetromino generally makes it falls at around 20 to 60 blocks per second, as fast as or faster than DAS"
                 // tetris.com appears to use the same speed as DAS. Default DAS is 50ms.
@@ -570,7 +599,7 @@
             ]);
     }
     function test_gravity() {
-        const game = game_make({ grid: { use_test_grid: true }, gravity: .5 });
+        const game = game_make({ grid: { use_test_grid: true }, fixed_gravity: .5 });
         game.add_tetrimino(tetrimino_make());
         assert_rendered(game,
             [
@@ -603,7 +632,7 @@
             ]);
         // Test gravity > 1
         {
-            const game = game_make({ grid: { use_test_grid: true }, gravity: 2 });
+            const game = game_make({ grid: { use_test_grid: true }, fixed_gravity: 2 });
             game.add_tetrimino(tetrimino_make());
             assert_rendered(game,
                 [
@@ -627,7 +656,7 @@
         }
     }
     function test_lock() {
-        const game = game_make({ grid: { use_test_grid: true }, gravity: 1 });
+        const game = game_make({ grid: { use_test_grid: true }, fixed_gravity: 1 });
         game.add_tetrimino(tetrimino_make({ i: 4 }));
         assert_rendered(game,
             [
@@ -673,9 +702,9 @@
                 ".FF.."
             ]);
 
-        // Test lock with high gravity.
+        // Test lock with high fixed_gravity.
         {
-            const game = game_make({ grid: { use_test_grid: true }, gravity: 4 });
+            const game = game_make({ grid: { use_test_grid: true }, fixed_gravity: 4 });
             game.add_tetrimino(tetrimino_make({ i: 4 }));
             assert_rendered(game,
                 [
@@ -726,7 +755,7 @@
     function test_rotate() {
         // Test basic rotate.
         {
-            const game = game_make({ grid: { use_test_grid: true }, gravity: .5 });
+            const game = game_make({ grid: { use_test_grid: true } });
             game.add_tetrimino(tetrimino_make({ i: 1 }));
             assert_rendered(game,
                 [
@@ -751,7 +780,7 @@
         }
         // Test wall kick.
         {
-            const game = game_make({ grid: { use_test_grid: true }, gravity: .5 });
+            const game = game_make({ grid: { use_test_grid: true } });
             game.add_tetrimino(tetrimino_make({ i: 0, j: 0, rotation_index: 1 }));
             assert_rendered(game,
                 [
@@ -776,7 +805,7 @@
         }
         // Test floor kick.
         {
-            const game = game_make({ grid: { use_test_grid: true }, gravity: .5 });
+            const game = game_make({ grid: { use_test_grid: true } });
             game.add_tetrimino(tetrimino_make({ i: 5, j: 1, rotation_index: 0 }));
             assert_rendered(game,
                 [
@@ -801,7 +830,7 @@
         }
         // Test failed rotation.
         {
-            const game = game_make({ grid: { use_test_grid: true }, gravity: 1 });
+            const game = game_make({ grid: { use_test_grid: true } });
             const grid = game.get_grid();
             grid.get(4, 1).filled = true;
             grid.get(5, 1).filled = true;
@@ -816,6 +845,7 @@
                     "#F..."
                 ]);
             game.rotate_left();
+            game.tick_frame();
             assert_rendered(game,
                 [
                     ".....",
@@ -840,7 +870,7 @@
         }
         // Test single line clear.
         {
-            const game = game_make({ grid: { use_test_grid: true }, gravity: 1 });
+            const game = game_make({ grid: { use_test_grid: true }, fixed_gravity: 1 });
             const grid = game.get_grid();
             fill_region(grid, { i: 5, j: 0 }, { i: 5, j: 3 });
             game.add_tetrimino(tetrimino_make({ i: 3, j: 4, rotation_index: 1 }));
@@ -887,7 +917,7 @@
     function test_move() {
         // Test move left / right.
         {
-            const game = game_make({ grid: { use_test_grid: true }, gravity: .1 });
+            const game = game_make({ grid: { use_test_grid: true } });
             const grid = game.get_grid();
             game.add_tetrimino(tetrimino_make({ i: 0, j: 1, rotation_index: 0 }));
             assert_rendered(game,
@@ -937,7 +967,7 @@
         }
         // Test delayed auto shift.
         {
-            const game = game_make({ grid: { use_test_grid: true }, gravity: .01 });
+            const game = game_make({ grid: { use_test_grid: true } });
             const grid = game.get_grid();
             game.add_tetrimino(tetrimino_make({ i: 0, j: 3, rotation_index: 0 }));
             assert_rendered(game,
@@ -1017,7 +1047,7 @@
     function test_hard_drop() {
         // Test move left / right.
         {
-            const game = game_make({ grid: { use_test_grid: true }, gravity: 1 });
+            const game = game_make({ grid: { use_test_grid: true } });
             const grid = game.get_grid();
             game.add_tetrimino(tetrimino_make({ i: 0, j: 1, rotation_index: 0 }));
             assert_rendered(game,
@@ -1046,7 +1076,7 @@
     function test_soft_drop() {
         // Test basic soft drop.
         {
-            const game = game_make({ grid: { use_test_grid: true }, gravity: .1 });
+            const game = game_make({ grid: { use_test_grid: true } });
             const grid = game.get_grid();
             game.add_tetrimino(tetrimino_make({ i: 0, j: 1, rotation_index: 0 }));
             assert_rendered(game,
@@ -1085,7 +1115,7 @@
         }
         // Test soft drop does not slow down high gravity.
         {
-            const game = game_make({ grid: { use_test_grid: true }, gravity: 1 });
+            const game = game_make({ grid: { use_test_grid: true }, fixed_gravity: 1 });
             const grid = game.get_grid();
             game.add_tetrimino(tetrimino_make({ i: 0, j: 1, rotation_index: 0 }));
             assert_rendered(game,
@@ -1158,7 +1188,7 @@
 
         // Test level increases every 10 lines cleared.
         {
-            const game = game_make({ grid: { use_test_grid: true }, gravity: 1 });
+            const game = game_make({ grid: { use_test_grid: true } });
             const grid = game.get_grid();
             for (let i = 0; i < 9; i++) {
                 clear_one_line(game);
@@ -1173,7 +1203,7 @@
         }
         // Test game ends at 300 lines cleared.
         {
-            const game = game_make({ grid: { use_test_grid: true }, gravity: 1 });
+            const game = game_make({ grid: { use_test_grid: true } });
             const grid = game.get_grid();
             for (let i = 0; i < 299; i++) {
                 clear_one_line(game);
@@ -1184,7 +1214,21 @@
         }
         // Test gravity caps at 20G.
         {
-            // TODO.
+            const game = game_make({ grid: { use_test_grid: true } });
+            const grid = game.get_grid();
+            for (let i = 0; i < 19 * 10 - 1; i++) {
+                clear_one_line(game);
+            }
+            console.assert(game.get_level() == 19, "expected level 19, got %d", game.get_level());
+            console.assert(game.get_gravity() == 20, `expected gravity 20, got ${game.get_gravity()}`);
+            clear_one_line(game);
+            console.assert(game.get_level() == 20, "expected level 20, got %d", game.get_level());
+            console.assert(game.get_gravity() == 20, `expected gravity 20, got ${game.get_gravity()}`);
+            for (let i = 0; i < 10; i++) {
+                clear_one_line(game);
+            }
+            console.assert(game.get_level() == 21, "expected level 21, got %d", game.get_level());
+            console.assert(game.get_gravity() == 20, `expected gravity 20, got ${game.get_gravity()}`);
         }
         // Test after 20G, lock delay decreases (TODO: by how much?)
         {
