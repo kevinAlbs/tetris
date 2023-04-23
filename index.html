@@ -133,9 +133,9 @@
         // tetrimino is the active tetrimino.
         let tetrimino = null;
         const grid = grid_make(opts.grid || {});
-        let fixed_gravity = opts.fixed_gravity;
         let gravity_counter = 0;
-        let lock_timer = 0;
+        const kMSPerFrame = 1000 / 60;
+        let lock_timer_ms = 0;
         let locking = false;
         const kDASDelayFrames = 10;
         let das_delay_frame_countdown = 0;
@@ -147,6 +147,9 @@
         let cleared_300 = false;
 
         obj.get_level = function () {
+            if (opts.fixed_level) {
+                return opts.fixed_level;
+            }
             // Level increases every 10 lines cleared.
             return 1 + Math.floor(total_lines_cleared / 10);
         }
@@ -156,8 +159,8 @@
         }
 
         obj.get_gravity = function () {
-            if (fixed_gravity) {
-                return fixed_gravity;
+            if (opts.fixed_gravity) {
+                return opts.fixed_gravity;
             }
             // When the level increases, so does the gravity.
             // The gravity reaches its maximum 20G at level 20.
@@ -191,6 +194,30 @@
             }
             console.assert(level in g_map);
             return g_map[level];
+        }
+
+        function get_lock_delay_ms() {
+            // Values copied from https://www.reddit.com/r/Tetris/comments/e1ov09/comment/f8s4n31/?utm_source=share&utm_medium=web2x&context=3
+            // Assuming levels are offset by one.
+            const level = obj.get_level();
+            if (level <= 20) {
+                return 500;
+            }
+            const lock_delay_map = {
+                21: 450,
+                22: 400,
+                23: 350,
+                24: 300,
+                25: 250,
+                26: 200,
+                27: 190,
+                28: 180,
+                29: 170,
+                30: 160,
+                31: 150
+            }
+            console.assert(level in lock_delay_map);
+            return lock_delay_map[level];
         }
 
         // is_colliding_below returns true if tetrimino has a filled cell or floor below.
@@ -435,7 +462,7 @@
                         t.i++;
                     }
                     locking = true;
-                    lock_timer = 1; // Lock this frame.
+                    lock_timer_ms = 0; // Lock this frame.
                 }
             }
             if (events.soft_drop) {
@@ -473,7 +500,8 @@
             if (is_colliding_below()) {
                 if (!locking) {
                     locking = true;
-                    lock_timer = 30 + 1; // Add 1 so locking state is 30 frames.
+                    lock_timer_ms = get_lock_delay_ms() + kMSPerFrame; // Add 1 frame so locking state excludes current frame.
+                    console.log("locking with delay " + get_lock_delay_ms());
                 }
             } else {
                 // TODO: if tetrimino was locking, and is rotated out, is locking expected to reset?
@@ -483,8 +511,8 @@
             // Apply lock.
             let fill_occurred = false;
             if (locking) {
-                lock_timer--;
-                if (lock_timer == 0) {
+                lock_timer_ms -= kMSPerFrame;
+                if (lock_timer_ms <= 0) {
                     // Fill cells with tetrimino.
                     const coords = t.get_coordinates();
                     for (let i = 0; i < coords.length; i++) {
@@ -737,6 +765,50 @@
                     ".....",
                     ".##.."
                 ]);
+            // Wait another frame.
+            game.tick_frame();
+            // Expect locked.
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".FF.."
+                ]);
+        }
+
+        // Test after 20G, lock delay decreases 
+        {
+            const game = game_make({ grid: { use_test_grid: true }, fixed_level: 21 });
+            const grid = game.get_grid();
+            game.add_tetrimino(tetrimino_make({ i: 5 }));
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".##.."
+                ]);
+            // Expect lock delay after 27 frames.
+            // Tick 26 frames.
+            for (let i = 0; i < 27; i++) {
+                game.tick_frame();
+                // Expect still not locked.
+                assert_rendered(game,
+                    [
+                        ".....",
+                        ".....",
+                        ".....",
+                        ".....",
+                        ".....",
+                        ".##.."
+                    ]);
+            }
+
             // Wait another frame.
             game.tick_frame();
             // Expect locked.
@@ -1229,10 +1301,6 @@
             }
             console.assert(game.get_level() == 21, "expected level 21, got %d", game.get_level());
             console.assert(game.get_gravity() == 20, `expected gravity 20, got ${game.get_gravity()}`);
-        }
-        // Test after 20G, lock delay decreases (TODO: by how much?)
-        {
-            // TODO.
         }
     }
     test_add_tetrimino();
