@@ -243,6 +243,7 @@
 
         // try_rotate tries to rotate in direction `dir`.
         // All kicks are tried in sequence. If all kicks fail, rotation does not occur.
+        // Returns true if rotation applied.
         function try_rotate(dir) {
             console.assert(tetrimino);
             const t = tetrimino;
@@ -288,7 +289,7 @@
             }
 
             if (kick_to_apply === null) {
-                return;
+                return false;
             }
 
             // Apply kick to position.
@@ -296,9 +297,10 @@
             t.j += kick_to_apply.jOffset;
             // Apply rotation.
             t.rotation_index = target_index;
+            return true;
         }
 
-        // try_move tries to move tetrimino in direction `dir`.
+        // try_move tries to move tetrimino in direction `dir`. Returns true if move applied.
         function try_move(dir) {
             console.assert(tetrimino);
             const t = tetrimino;
@@ -318,15 +320,16 @@
             for (let i = 0; i < coords.length; i++) {
                 const pair = coords[i];
                 if (!grid.has(pair.i, pair.j + jOffset)) {
-                    return;
+                    return false;
                 }
                 const cell = grid.get(pair.i, pair.j + jOffset);
                 if (cell.filled) {
-                    return;
+                    return false;
                 }
             }
             // All destination cells are clear. Apply move.
             t.j += jOffset;
+            return true;
         }
 
 
@@ -377,16 +380,18 @@
         obj.tick_frame = function () {
             let t = tetrimino;
             let in_soft_drop = false;
+            let did_move = false;
+            let did_rotate = false;
 
             // Handle events.
             if (events.rotate_left) {
                 if (t) {
-                    try_rotate("left");
+                    did_rotate ||= try_rotate("left");
                 }
             }
             if (events.rotate_right) {
                 if (t) {
-                    try_rotate("right");
+                    did_rotate ||= try_rotate("right");
                 }
             }
             if (events.move_left) {
@@ -397,7 +402,7 @@
                         case kDASWantRight:
                         case kDASNone:
                             // User was moving right or not moving. Make immediate move and start DAS sequence.
-                            try_move("left");
+                            did_move ||= try_move("left");
                             das_state = kDASWantLeft;
                             das_delay_frame_countdown = kDASDelayFrames;
                             break;
@@ -405,7 +410,7 @@
                             das_delay_frame_countdown--;
                             if (das_delay_frame_countdown <= 0) {
                                 // Delay has completed. Begin repeating.
-                                try_move("left");
+                                did_move ||= try_move("left");
                                 das_state = kDASLeft;
                                 das_repeat_frame_countdown = kDASRepeatFrames;
                             }
@@ -413,7 +418,7 @@
                         case kDASLeft:
                             das_repeat_frame_countdown--;
                             if (das_repeat_frame_countdown <= 0) {
-                                try_move("left");
+                                did_move ||= try_move("left");
                                 das_repeat_frame_countdown = kDASRepeatFrames;
                             }
                             break;
@@ -428,7 +433,7 @@
                         case kDASWantLeft:
                         case kDASNone:
                             // User was moving left or not moving. Make immediate move and start DAS sequence.
-                            try_move("right");
+                            did_move ||= try_move("right");
                             das_state = kDASWantRight;
                             das_delay_frame_countdown = kDASDelayFrames;
                             break;
@@ -436,7 +441,7 @@
                             das_delay_frame_countdown--;
                             if (das_delay_frame_countdown <= 0) {
                                 // Delay has completed. Begin repeating.
-                                try_move("right");
+                                did_move ||= try_move("right");
                                 das_state = kDASRight;
                                 das_repeat_frame_countdown = kDASRepeatFrames;
                             }
@@ -444,7 +449,7 @@
                         case kDASRight:
                             das_repeat_frame_countdown--;
                             if (das_repeat_frame_countdown <= 0) {
-                                try_move("right");
+                                did_move ||= try_move("right");
                                 das_repeat_frame_countdown = kDASRepeatFrames;
                             }
                             break;
@@ -497,14 +502,19 @@
 
             // Start lock timer.
             // If Tetrimino is colliding with block below, start the lock timer.
-            if (is_colliding_below()) {
+            if (t && is_colliding_below()) {
                 if (!locking) {
                     locking = true;
                     lock_timer_ms = get_lock_delay_ms() + kMSPerFrame; // Add 1 frame so locking state excludes current frame.
+                } else {
+                    // From https://harddrop.com/wiki/Tetris_at_tetris.com:
+                    // "The game uses move-reset lock delay. That means every time a piece is moved or rotated, lock delay is reset and the piece is still active until the delay runs out (or the piece is moved or rotated 15 times before descending)."
+                    if (did_move || did_rotate) {
+                        lock_timer_ms = get_lock_delay_ms() + kMSPerFrame;
+                    }
                 }
             } else {
-                // TODO: if tetrimino was locking, and is rotated out, is locking expected to reset?
-                // Assume "no". Rationale: this permits pieces to be rotated indefinitely.
+                locking = false;
             }
 
             // Apply lock.
@@ -819,6 +829,79 @@
                     ".....",
                     ".....",
                     ".FF.."
+                ]);
+        }
+
+        // Test move resets lock delay
+        {
+            const game = game_make({ grid: { use_test_grid: true }, fixed_gravity: 1 });
+            game.add_tetrimino(tetrimino_make({ i: 4 }));
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".##..",
+                    "....."
+                ]);
+            game.tick_frame();
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".##.."
+                ]);
+            // Tick 29 frames.
+            for (let i = 0; i < 29; i++) game.tick_frame();
+            // Expect still not locked.
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".##.."
+                ]);
+            game.move_left();
+            game.tick_frame();
+            // Expect not locked.
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "##..."
+                ]);
+            // Tick 29 frames.
+            for (let i = 0; i < 29; i++) game.tick_frame();
+            // Expect still not locked.
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "##..."
+                ]);
+            game.move_left();
+            game.tick_frame();
+            // Expect not locked.
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "FF..."
                 ]);
         }
     }
