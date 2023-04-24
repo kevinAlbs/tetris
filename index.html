@@ -353,6 +353,10 @@
             tetrimino = t;
         };
 
+        obj.spawn_tetrimino = function (opts) {
+
+        }
+
         obj.rotate_left = function () {
             events.rotate_left = true;
         };
@@ -617,7 +621,7 @@
     }
 
     // Tests ... begin
-    function assert_rendered(game, expected) {
+    function assert_rendered(game, expected, opts) {
         const got = game.render_text();
         expected = expected.join("\n");
         console.assert(got == expected, "expected grid:\n%s\ngot grid:\n%s\n", expected, got);
@@ -1385,6 +1389,29 @@
             console.assert(game.get_gravity() == 20, `expected gravity 20, got ${game.get_gravity()}`);
         }
     }
+
+    function test_spawn() {
+        {
+            const game = game_make({ grid: { use_test_grid: true } });
+            game.spawn_tetrimino({ tetrimino_type: "test" });
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "-----",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "F...."],
+                { render_buffer_zone: true });
+        }
+    }
     test_add_tetrimino();
     test_gravity();
     test_lock();
@@ -1394,5 +1421,6 @@
     test_hard_drop();
     test_soft_drop();
     test_levels();
+    test_spawn();
     // Tests ... end
 </script>
