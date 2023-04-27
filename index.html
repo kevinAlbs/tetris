@@ -96,6 +96,13 @@
                 [{ iOffset: 0, jOffset: 0 }, { iOffset: 1, jOffset: 0 }],
                 [{ iOffset: 0, jOffset: 0 }, { iOffset: 0, jOffset: -1 }],
                 [{ iOffset: 0, jOffset: 0 }, { iOffset: 1, jOffset: 0 }]
+            ],
+
+            /* I
+             * 
+             */
+            "I": [
+
             ]
         }
 
@@ -136,6 +143,42 @@
                 console.assert("Don't know how to get_coordinates for type: %s", obj.type);
             }
         };
+
+        obj.get_height = function () {
+            const coords = obj.get_coordinates();
+            let min = coords[0].i;
+            let max = coords[0].i;
+            console.log(coords);
+            for (let i = 1; i < coords.length; i++) {
+                const pair = coords[i];
+                console.log(pair);
+                if (pair.i < min) {
+                    min = pair.i;
+                }
+                if (pair.i > max) {
+                    max = pair.i;
+                }
+            }
+            console.assert(max >= min);
+            return 1 + max - min;
+        }
+
+        obj.get_width = function () {
+            const coords = obj.get_coordinates();
+            let min = coords[0].j;
+            let max = coords[0].j;
+            for (let i = 1; i < coords.length; i++) {
+                const pair = coords[i];
+                if (pair.j < min) {
+                    min = pair.j;
+                }
+                if (pair.j > max) {
+                    max = pair.j;
+                }
+            }
+            console.assert(max >= min);
+            return 1 + max - min;
+        }
 
         obj.get_rotations = function () {
             console.assert(obj.type in rotation_map);
@@ -378,7 +421,46 @@
         };
 
         obj.spawn_tetrimino = function (opts) {
+            console.assert(opts);
+            console.assert(opts.tetrimino_type);
+            let start_i;
+            let start_j;
 
+            switch (opts.tetrimino_type) {
+                case "test":
+                    start_j = 1;
+                    break;
+                case "I":
+                    start_i = 0;
+                    start_j = 3;
+                    break;
+                case "J":
+                case "L":
+                case "S":
+                case "Z":
+                case "T":
+                    start_i = -1;
+                    start_j = 3;
+                    break;
+                case "O":
+                    start_i = -1;
+                    start_j = 4;
+                    break;
+                default:
+                    console.assert(false, "do not know how to spawn tetrimino type: %s", opts.tetrimino_type);
+                    return;
+            }
+
+            obj.add_tetrimino(tetrimino_make({
+                type: opts.tetrimino_type,
+                i: start_i,
+                j: start_j
+            }));
+
+            // Attempt to move down immediately.
+            if (!is_colliding_below()) {
+                tetrimino.i++;
+            }
         }
 
         obj.rotate_left = function () {
@@ -1441,19 +1523,30 @@
             assert_rendered(game,
                 [
                     ".....",
-                    ".....",
-                    ".....",
-                    ".....",
-                    ".....",
-                    ".....",
-                    "-----",
                     ".##..",
                     ".....",
                     ".....",
                     ".....",
-                    ".....",
                     "....."],
-                { render_buffer: true });
+            );
+        }
+        // Spawn starts at row 0 if row 1 is filled.
+        {
+            const game = game_make({ grid: { use_test_grid: true } });
+            const grid = game.get_grid();
+            for (let i = 1; i < grid.nrows(); i++) {
+                grid.get(i, 2).filled = true;
+            }
+            game.spawn_tetrimino({ tetrimino_type: "test" });
+            assert_rendered(game,
+                [
+                    ".##..",
+                    "..F..",
+                    "..F..",
+                    "..F..",
+                    "..F..",
+                    "..F.."],
+            );
         }
     }
     test_add_tetrimino();
