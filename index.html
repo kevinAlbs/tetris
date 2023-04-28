@@ -461,6 +461,8 @@
             if (!is_colliding_below()) {
                 tetrimino.i++;
             }
+            // Reset gravity counter.
+            gravity_counter = 0;
         }
 
         obj.rotate_left = function () {
