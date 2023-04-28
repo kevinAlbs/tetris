@@ -212,6 +212,11 @@
         let das_state = kDASNone;
         let total_lines_cleared = 0;
         let cleared_300 = false;
+        let has_lost = false;
+
+        obj.get_has_lost = function () {
+            return has_lost;
+        }
 
         obj.get_level = function () {
             if (opts.fixed_level) {
@@ -451,15 +456,26 @@
                     return;
             }
 
-            obj.add_tetrimino(tetrimino_make({
+            const t = tetrimino_make({
                 type: opts.tetrimino_type,
                 i: start_i,
                 j: start_j
-            }));
+            });
+
+            const coords = t.get_coordinates();
+            for (let i = 0; i < coords.length; i++) {
+                const pair = coords[i];
+                if (grid.get(pair.i, pair.j).filled) {
+                    // The player tops out when a piece is spawned overlapping at least one block
+                    has_lost = true;
+                    return;
+                }
+            }
+            obj.add_tetrimino(t);
 
             // Attempt to move down immediately.
             if (!is_colliding_below()) {
-                tetrimino.i++;
+                t.i++;
             }
             // Reset gravity counter.
             gravity_counter = 0;
@@ -587,6 +603,21 @@
             }
             clear_events();
 
+            if (t) {
+                // The player tops out when a block is pushed above the 20-row buffer zone.
+                const coords = t.get_coordinates();
+                for (let i = 0; i < coords.length; i++) {
+                    const pair = coords[i];
+                    if (!grid.has(pair.i, pair.j)) {
+                        has_lost = true;
+                        // Remove tetrimino.
+                        tetrimino = null;
+                        t = null;
+                    }
+                }
+
+            }
+
             // Apply gravity.
             // Tetriminos move at a rate of `gravity` cells per frame.
             if (t) {
@@ -634,12 +665,20 @@
             if (locking) {
                 lock_timer_ms -= kMSPerFrame;
                 if (lock_timer_ms <= 0) {
+                    let is_visible = false;
                     // Fill cells with tetrimino.
                     const coords = t.get_coordinates();
                     for (let i = 0; i < coords.length; i++) {
                         const pair = coords[i];
                         const cell = grid.get(pair.i, pair.j);
                         cell.filled = true;
+                        if (grid.has_visible(pair.i, pair.j)) {
+                            is_visible = true;
+                        }
+                    }
+                    if (!is_visible) {
+                        // The player tops out when a piece locks completely above the visible portion of the playfield.
+                        has_lost = true;
                     }
                     // Reset tetrimino.
                     tetrimino = null;
@@ -725,8 +764,16 @@
                 if (t.type == "test") {
                     const coords = t.get_coordinates();
                     coords.forEach((pair) => {
-                        if (pair.i >= 0 && pair.i < text_grid.length && pair.j >= 0 && pair.j < text_grid[pair.i].length) {
-                            text_grid[pair.i][pair.j] = "#";
+                        let ip = pair.i;
+                        if (opts && opts.render_buffer) {
+                            if (ip < 0) {
+                                ip += grid.nrows();
+                            } else {
+                                ip += grid.nrows() + 1;
+                            }
+                        }
+                        if (ip >= 0 && ip < text_grid.length && pair.j >= 0 && pair.j < text_grid[ip].length) {
+                            text_grid[ip][pair.j] = "#";
                         }
                     });
                 } else {
@@ -1551,6 +1598,115 @@
             );
         }
     }
+
+    function test_loss() {
+        // The player tops out when a piece is spawned overlapping at least one block.
+        // Spawn starts at row 0 if row 1 is filled.
+        {
+            const game = game_make({ grid: { use_test_grid: true, fixed_gravity: 1 } });
+            const grid = game.get_grid();
+            for (let i = 1; i < grid.nrows(); i++) {
+                grid.get(i, 2).filled = true;
+            }
+            game.spawn_tetrimino({ tetrimino_type: "test" });
+            assert_rendered(game,
+                [
+                    ".##..",
+                    "..F..",
+                    "..F..",
+                    "..F..",
+                    "..F..",
+                    "..F.."],
+            );
+            console.assert(!game.get_has_lost());
+            // Wait for lock.
+            for (let i = 0; i < 30; i++) {
+                game.tick_frame();
+            }
+            game.tick_frame();
+            assert_rendered(game,
+                [
+                    ".FF..",
+                    "..F..",
+                    "..F..",
+                    "..F..",
+                    "..F..",
+                    "..F.."],
+            );
+            game.spawn_tetrimino({ tetrimino_type: "test" });
+            console.assert(game.get_has_lost());
+        }
+        // Or a piece locks completely above the visible portion of the playfield
+        {
+            const game = game_make({ grid: { use_test_grid: true, fixed_gravity: 1 } });
+            const grid = game.get_grid();
+            for (let i = 1; i < grid.nrows(); i++) {
+                for (let j = 0; j < grid.ncols(); j++) {
+                    grid.get(i, j).filled = true;
+                }
+            }
+            grid.get(0, 3).filled = true;
+            game.spawn_tetrimino({ tetrimino_type: "test" });
+            assert_rendered(game,
+                [
+                    ".##F.",
+                    "FFFFF",
+                    "FFFFF",
+                    "FFFFF",
+                    "FFFFF",
+                    "FFFFF"],
+            );
+            console.assert(!game.get_has_lost());
+            game.rotate_right();
+            game.move_right();
+            game.tick_frame();
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "..#..",
+                    "-----",
+                    "..#F.",
+                    "FFFFF",
+                    "FFFFF",
+                    "FFFFF",
+                    "FFFFF",
+                    "FFFFF"], { render_buffer: true }
+            );
+            game.rotate_right();
+            game.tick_frame(); // Tick without moving right to reset DAS.
+            game.move_right();
+            game.tick_frame();
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "..##.",
+                    "-----",
+                    "...F.",
+                    "FFFFF",
+                    "FFFFF",
+                    "FFFFF",
+                    "FFFFF",
+                    "FFFFF"], { render_buffer: true }
+            );
+            // Wait for lock.
+            for (let i = 0; i < 30; i++) {
+                game.tick_frame();
+            }
+            console.assert(game.get_has_lost());
+        }
+        // Or a block is pushed above the 20-row buffer zone.
+        {
+            // TODO: not sure if this can be tested.
+        }
+    }
     test_add_tetrimino();
     test_gravity();
     test_lock();
@@ -1561,5 +1717,6 @@
     test_soft_drop();
     test_levels();
     test_spawn();
+    test_loss();
     // Tests ... end
 </script>
