@@ -1,3 +1,4 @@
+<div style="font-family: 'Courier New'" id="display_text"></div>
 <script>
     "use strict"
     function cell_make(i, j) {
@@ -202,7 +203,7 @@
         let tetrimino = null;
         const grid = grid_make(opts.grid || {});
         let gravity_counter = 0;
-        const kMSPerFrame = 1000 / 60;
+        const kMSPerFrame = opts.kMSPerFrame || 1000 / 60;
         let lock_timer_ms = 0;
         let locking = false;
         const kDASDelayFrames = 10;
@@ -816,6 +817,68 @@
         obj.get_grid = function () {
             // TODO: can I return a read-only view of an object?
             return grid;
+        }
+
+        let tick_counter_ms = 0;
+        let prev_ms = null;
+        obj.loop = function (opts) {
+            const curr_ms = Date.now();
+            if (prev_ms === null) {
+                prev_ms = curr_ms;
+            }
+            const delta_ms = curr_ms - prev_ms;
+            prev_ms = curr_ms;
+            tick_counter_ms += delta_ms;
+
+            while (tick_counter_ms >= kMSPerFrame) {
+                obj.tick_frame();
+                tick_counter_ms -= kMSPerFrame;
+            }
+
+            if (opts && opts.render_text_element) {
+                const text = obj.render_text();
+                opts.render_text_element.innerText = text;
+            }
+            window.requestAnimationFrame(function () {
+                obj.loop(opts);
+            });
+        }
+
+        obj.register_event_listeners = function () {
+            document.addEventListener("keydown", function (e) {
+                // console.log(e);
+                switch (e.keyCode) {
+                    case 40:
+                        // down arrow.
+                        obj.soft_drop();
+                        break;
+                    case 37:
+                        // left arrow.
+                        obj.move_left();
+                        break;
+                    case 39:
+                        // right arrow.
+                        obj.move_right();
+                        break;
+                    case 38:
+                        // up arrow.
+                        obj.rotate_right();
+                        break;
+                    case 32:
+                        // space.
+                        obj.hard_drop();
+                        break;
+                }
+                if (e.keyCode == 40) {
+                    // down arrow
+                }
+                else if (e.keyCode == '37') {
+                    // left arrow
+                }
+                else if (e.keyCode == '39') {
+                    // right arrow
+                }
+            });
         }
         return obj;
     }
@@ -1832,4 +1895,13 @@
     test_loss();
     test_entry_delay();
     // Tests ... end
+
+    function test_live() {
+        const game = game_make({ grid: { use_test_grid: true }, enable_spawn: true });
+        game.register_event_listeners();
+        game.loop({
+            render_text_element: document.querySelector("#display_text")
+        });
+    }
+    // test_live();
 </script>
