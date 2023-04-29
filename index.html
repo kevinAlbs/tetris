@@ -430,10 +430,6 @@
         obj.add_tetrimino = function (t) {
             console.assert(tetrimino == null);
             tetrimino = t;
-            // If in DAS, reset repeat_frame_countdown. This agrees with observed behavior on tetris.com.
-            if (das_state == kDASLeft || das_state == kDASRight) {
-                das_repeat_frame_countdown = kDASRepeatFrames;
-            }
         };
 
         obj.spawn_tetrimino = function (opts) {
@@ -490,6 +486,11 @@
             }
             // Reset gravity counter.
             gravity_counter = 0;
+
+            // If in DAS, reset repeat_frame_countdown. This agrees with observed behavior on tetris.com.
+            if (das_state == kDASLeft || das_state == kDASRight) {
+                das_repeat_frame_countdown = kDASRepeatFrames;
+            }
         }
 
         function try_spawn() {
@@ -1410,13 +1411,14 @@
                 game.tick_frame();
             }
 
-            game.add_tetrimino(tetrimino_make({ i: 0, j: 3, rotation_index: 0 }));
+            // Use spawn_tetrimino. spawn_tetrimino resets DAS frame repeat counter.
+            game.spawn_tetrimino({ tetrimino_type: "test" });
             // Expect exactly 3 frames until moving left.
             for (let i = 0; i < 3; i++) {
                 assert_rendered(game,
                     [
-                        "...##",
                         ".....",
+                        ".##..",
                         ".....",
                         ".....",
                         ".....",
@@ -1427,8 +1429,8 @@
             }
             assert_rendered(game,
                 [
-                    "..##.",
                     ".....",
+                    "##...",
                     ".....",
                     ".....",
                     ".....",
