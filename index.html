@@ -196,6 +196,7 @@
 
     function game_make(opts) {
         opts = opts || {};
+        const game_opts = opts;
         const obj = {};
         // tetrimino is the active tetrimino.
         let tetrimino = null;
@@ -213,6 +214,12 @@
         let total_lines_cleared = 0;
         let cleared_300 = false;
         let has_lost = false;
+        const kEntryDelayFrames = 6;
+        let entry_delay_counter = 0;
+
+        obj.get_entry_delay_frames = function () {
+            return kEntryDelayFrames;
+        }
 
         obj.get_has_lost = function () {
             return has_lost;
@@ -485,6 +492,21 @@
             gravity_counter = 0;
         }
 
+        function try_spawn() {
+            if (tetrimino) return;
+            if (game_opts.grid && game_opts.grid.use_test_grid && !game_opts.enable_spawn) return;
+            entry_delay_counter++;
+            if (entry_delay_counter >= kEntryDelayFrames) {
+                if (game_opts.grid && game_opts.grid.use_test_grid) {
+                    // Spawn a test piece.
+                    obj.spawn_tetrimino({ tetrimino_type: "test" });
+                } else {
+                    console.assert(false, "Not implemented yet");
+                }
+                entry_delay_counter = 0;
+            }
+        }
+
         obj.rotate_left = function () {
             events.rotate_left = true;
         };
@@ -510,6 +532,8 @@
         }
 
         obj.tick_frame = function () {
+            try_spawn();
+
             let t = tetrimino;
             let in_soft_drop = false;
             let did_move = false;
@@ -1743,6 +1767,56 @@
             // TODO: not sure if this can be tested.
         }
     }
+
+    function test_entry_delay() {
+        {
+            const game = game_make({ grid: { use_test_grid: true }, enable_spawn: true });
+            for (let i = 0; i < game.get_entry_delay_frames(); i++) {
+                assert_rendered(game,
+                    [
+                        ".....",
+                        ".....",
+                        ".....",
+                        ".....",
+                        ".....",
+                        "....."],
+                );
+                game.tick_frame();
+            }
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".##..",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "....."],
+            );
+            game.hard_drop();
+            game.tick_frame();
+            for (let i = 0; i < game.get_entry_delay_frames(); i++) {
+                assert_rendered(game,
+                    [
+                        ".....",
+                        ".....",
+                        ".....",
+                        ".....",
+                        ".....",
+                        ".FF.."],
+                );
+                game.tick_frame();
+            }
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".##..",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".FF.."],
+            );
+        }
+    }
     test_add_tetrimino();
     test_gravity();
     test_lock();
@@ -1754,5 +1828,6 @@
     test_levels();
     test_spawn();
     test_loss();
+    test_entry_delay();
     // Tests ... end
 </script>
