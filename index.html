@@ -423,7 +423,8 @@
                 move_left: false,
                 move_right: false,
                 hard_drop: false,
-                soft_drop: false
+                soft_drop: false,
+                hold: false
             }
         }
 
@@ -535,6 +536,9 @@
             events.soft_drop = true;
         }
 
+        obj.hold = function () {
+            events.hold = true;
+        }
         obj.tick_frame = function () {
             try_spawn();
 
@@ -658,6 +662,11 @@
             if (events.soft_drop) {
                 in_soft_drop = true;
             }
+
+            if (events.hold) {
+                // TODO.
+            }
+
             clear_events();
 
             if (t) {
@@ -2034,6 +2043,102 @@
                     ".....",
                     ".FF.."],
             );
+        }
+    }
+
+    function test_hold() {
+        {
+            const game = game_make({ grid: { use_test_grid: true }, fixed_gravity: 1 });
+            // Hold succeeds. Next piece spawns.
+            {
+                game.spawn_tetrimino();
+                assert_rendered(game,
+                    [
+                        ".....",
+                        ".##..",
+                        ".....",
+                        ".....",
+                        ".....",
+                        "....."],
+                );
+                game.tick_frame();
+                assert_rendered(game,
+                    [
+                        ".....",
+                        ".....",
+                        ".##..",
+                        ".....",
+                        ".....",
+                        "....."],
+                );
+                game.hold();
+                game.tick_frame();
+                assert_rendered(game,
+                    [
+                        ".....",
+                        ".##..",
+                        ".....",
+                        ".....",
+                        ".....",
+                        "....."],
+                );
+            }
+            // Cannot swap held tetrimino back until locking.
+            {
+                game.hold();
+                game.tick_frame();
+                assert_rendered(game,
+                    [
+                        ".....",
+                        ".....",
+                        ".##..",
+                        ".....",
+                        ".....",
+                        "....."],
+                );
+                game.hard_drop();
+                game.tick_frame();
+                assert_rendered(game,
+                    [
+                        ".....",
+                        ".....",
+                        ".....",
+                        ".....",
+                        ".....",
+                        ".FF.."],
+                );
+                game.spawn_tetrimino();
+                assert_rendered(game,
+                    [
+                        ".....",
+                        ".##..",
+                        ".....",
+                        ".....",
+                        ".....",
+                        ".FF.."],
+                );
+                game.tick_frame();
+                assert_rendered(game,
+                    [
+                        ".....",
+                        ".....",
+                        ".##..",
+                        ".....",
+                        ".....",
+                        ".FF.."],
+                );
+                game.hold();
+                game.tick_frame();
+                assert_rendered(game,
+                    [
+                        ".....",
+                        ".##..",
+                        ".....",
+                        ".....",
+                        ".....",
+                        ".FF.."],
+                );
+            }
         }
     }
     test_add_tetrimino();
