@@ -218,6 +218,10 @@
         let has_lost = false;
         const kEntryDelayFrames = 6;
         let entry_delay_counter = 0;
+        let hold_tetrimino_type = null;
+        // hold_lock is true when a tetrimino has been put in hold.
+        // When hold_lock is true, another tetrimino cannot be put in hold until the current tetrimino locks.
+        let hold_lock = false;
 
         obj.get_entry_delay_frames = function () {
             return kEntryDelayFrames;
@@ -435,11 +439,13 @@
             tetrimino = t;
         };
 
-        obj.spawn_tetrimino = function () {
+        obj.spawn_tetrimino = function (opts) {
             let tetrimino_type;
             if (game_opts.grid && game_opts.grid.use_test_grid) {
                 // Spawn a test piece.
                 tetrimino_type = "test";
+            } else if (opts && opts.tetrimino_type) {
+                tetrimino_type = opts.tetrimino_type;
             } else {
                 console.assert("Not implemented yet");
                 return;
@@ -664,7 +670,19 @@
             }
 
             if (events.hold) {
-                // TODO.
+                if (!hold_lock) {
+                    hold_lock = true;
+                    const prev_hold_tetrimino_type = hold_tetrimino_type;
+                    hold_tetrimino_type = tetrimino.type;
+                    tetrimino = null;
+                    t = null;
+                    // Immediately spawn next.
+                    if (prev_hold_tetrimino_type) {
+                        obj.spawn_tetrimino({ tetrimino_type: prev_hold_tetrimino_type });
+                    } else {
+                        obj.spawn_tetrimino();
+                    }
+                }
             }
 
             clear_events();
@@ -753,6 +771,7 @@
                     // Reset tetrimino.
                     tetrimino = null;
                     fill_occurred = true;
+                    hold_lock = false;
                 }
             }
 
@@ -2156,6 +2175,7 @@
     test_spawn();
     test_loss();
     test_entry_delay();
+    test_hold();
     // Tests ... end
 
     function test_live() {
