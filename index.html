@@ -908,7 +908,10 @@
         key_states_reset();
         function key_states_apply() {
             if (key_states[kKeyDownArrow].down) obj.soft_drop();
-            if (key_states[kKeySpace].down) obj.hard_drop();
+            if (key_states[kKeySpace].down && !key_states[kKeySpace].pressHandled) {
+                obj.hard_drop();
+                key_states[kKeySpace].pressHandled = true;
+            }
             if (key_states[kKeyLeftArrow].down) obj.move_left();
             if (key_states[kKeyRightArrow].down) obj.move_right();
             if (key_states[kKeyUpArrow].down && !key_states[kKeyUpArrow].pressHandled) {
