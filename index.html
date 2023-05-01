@@ -544,6 +544,7 @@
             let did_rotate = false;
 
             // Handle events.
+            key_states_apply();
             if (events.rotate_left) {
                 if (t) {
                     if (try_rotate("left")) {
@@ -927,7 +928,7 @@
 
             // Clear key state on window blur.
             window.addEventListener("blur", function (e) {
-                keys_down = {};
+                key_states_reset();
             });
         }
         return obj;
