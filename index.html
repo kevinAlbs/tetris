@@ -850,40 +850,56 @@
             });
         }
 
+        const kKeyDownArrow = 40;
+        const kKeyLeftArrow = 37;
+        const kKeyRightArrow = 39;
+        const kKeyUpArrow = 38;
+        const kKeySpace = 32;
+        const kKeyC = 67;
+        let key_states;
+        function key_states_reset() {
+            key_states = {};
+
+            key_states[kKeyDownArrow] = { down: false, pressHandled: false };
+            key_states[kKeyLeftArrow] = { down: false, pressHandled: false };
+            key_states[kKeyRightArrow] = { down: false, pressHandled: false };
+            key_states[kKeyUpArrow] = { down: false, pressHandled: false };
+            key_states[kKeySpace] = { down: false, pressHandled: false };
+            key_states[kKeyC] = { down: false, pressHandled: false };
+        }
+        key_states_reset();
+        function key_states_apply() {
+            if (key_states[kKeyDownArrow].down) obj.soft_drop();
+            if (key_states[kKeySpace].down) obj.hard_drop();
+            if (key_states[kKeyLeftArrow].down) obj.move_left();
+            if (key_states[kKeyRightArrow].down) obj.move_right();
+            if (key_states[kKeyUpArrow].down && !key_states[kKeyUpArrow].pressHandled) {
+                obj.rotate_right();
+                key_states[kKeyUpArrow].pressHandled = true;
+            }
+            if (key_states[kKeyC].down && !key_states[kKeyC].pressHandled) {
+                obj.hold();
+                key_states[kKeyC].pressHandled = true;
+            }
+        }
         obj.register_event_listeners = function () {
             document.addEventListener("keydown", function (e) {
-                // console.log(e);
-                switch (e.keyCode) {
-                    case 40:
-                        // down arrow.
-                        obj.soft_drop();
-                        break;
-                    case 37:
-                        // left arrow.
-                        obj.move_left();
-                        break;
-                    case 39:
-                        // right arrow.
-                        obj.move_right();
-                        break;
-                    case 38:
-                        // up arrow.
-                        obj.rotate_right();
-                        break;
-                    case 32:
-                        // space.
-                        obj.hard_drop();
-                        break;
+                if (!(e.keyCode in key_states)) {
+                    return;
                 }
-                if (e.keyCode == 40) {
-                    // down arrow
+                key_states[e.keyCode].down = true;
+            });
+            document.addEventListener("keyup", function (e) {
+                if (!(e.keyCode in key_states)) {
+                    return;
                 }
-                else if (e.keyCode == '37') {
-                    // left arrow
-                }
-                else if (e.keyCode == '39') {
-                    // right arrow
-                }
+                key_states[e.keyCode].down = false;
+                key_states[e.keyCode].pressHandled = false;
+            })
+
+            // Clear key state on window blur.
+            window.addEventListener("blur", function (e) {
+                keys_down = {};
             });
         }
         return obj;
