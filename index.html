@@ -434,13 +434,19 @@
             tetrimino = t;
         };
 
-        obj.spawn_tetrimino = function (opts) {
-            console.assert(opts);
-            console.assert(opts.tetrimino_type);
+        obj.spawn_tetrimino = function () {
+            let tetrimino_type;
+            if (game_opts.grid && game_opts.grid.use_test_grid) {
+                // Spawn a test piece.
+                tetrimino_type = "test";
+            } else {
+                console.assert("Not implemented yet");
+                return;
+            }
             let start_i;
             let start_j;
 
-            switch (opts.tetrimino_type) {
+            switch (tetrimino_type) {
                 case "test":
                     start_j = 1;
                     break;
@@ -461,12 +467,12 @@
                     start_j = 4;
                     break;
                 default:
-                    console.assert(false, "do not know how to spawn tetrimino type: %s", opts.tetrimino_type);
+                    console.assert(false, "do not know how to spawn tetrimino type: %s", tetrimino_type);
                     return;
             }
 
             const t = tetrimino_make({
-                type: opts.tetrimino_type,
+                type: tetrimino_type,
                 i: start_i,
                 j: start_j
             });
@@ -500,12 +506,7 @@
             if (game_opts.grid && game_opts.grid.use_test_grid && !game_opts.enable_spawn) return;
             entry_delay_counter++;
             if (entry_delay_counter >= kEntryDelayFrames) {
-                if (game_opts.grid && game_opts.grid.use_test_grid) {
-                    // Spawn a test piece.
-                    obj.spawn_tetrimino({ tetrimino_type: "test" });
-                } else {
-                    console.assert(false, "Not implemented yet");
-                }
+                obj.spawn_tetrimino();
                 entry_delay_counter = 0;
             }
         }
@@ -1556,7 +1557,7 @@
             }
 
             // Use spawn_tetrimino. spawn_tetrimino resets DAS frame repeat counter.
-            game.spawn_tetrimino({ tetrimino_type: "test" });
+            game.spawn_tetrimino();
             // Expect exactly 3 frames until moving left.
             for (let i = 0; i < 3; i++) {
                 assert_rendered(game,
@@ -1774,7 +1775,7 @@
     function test_spawn() {
         {
             const game = game_make({ grid: { use_test_grid: true } });
-            game.spawn_tetrimino({ tetrimino_type: "test" });
+            game.spawn_tetrimino();
             assert_rendered(game,
                 [
                     ".....",
@@ -1792,7 +1793,7 @@
             for (let i = 1; i < grid.nrows(); i++) {
                 grid.get(i, 2).filled = true;
             }
-            game.spawn_tetrimino({ tetrimino_type: "test" });
+            game.spawn_tetrimino();
             assert_rendered(game,
                 [
                     ".##..",
@@ -1814,7 +1815,7 @@
             for (let i = 1; i < grid.nrows(); i++) {
                 grid.get(i, 2).filled = true;
             }
-            game.spawn_tetrimino({ tetrimino_type: "test" });
+            game.spawn_tetrimino();
             assert_rendered(game,
                 [
                     ".##..",
@@ -1839,7 +1840,7 @@
                     "..F..",
                     "..F.."],
             );
-            game.spawn_tetrimino({ tetrimino_type: "test" });
+            game.spawn_tetrimino();
             console.assert(game.get_has_lost());
         }
         // Or a piece locks completely above the visible portion of the playfield
@@ -1852,7 +1853,7 @@
                 }
             }
             grid.get(0, 3).filled = true;
-            game.spawn_tetrimino({ tetrimino_type: "test" });
+            game.spawn_tetrimino();
             assert_rendered(game,
                 [
                     ".##F.",
