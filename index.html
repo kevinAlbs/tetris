@@ -546,12 +546,16 @@
             // Handle events.
             if (events.rotate_left) {
                 if (t) {
-                    did_rotate ||= try_rotate("left");
+                    if (try_rotate("left")) {
+                        did_rotate = true;
+                    }
                 }
             }
             if (events.rotate_right) {
                 if (t) {
-                    did_rotate ||= try_rotate("right");
+                    if (try_rotate("right")) {
+                        did_rotate = true;
+                    }
                 }
             }
             if (events.move_left) {
@@ -561,7 +565,11 @@
                     case kDASWantRight:
                     case kDASNone:
                         // User was moving right or not moving. Make immediate move and start DAS sequence.
-                        if (t) { did_move ||= try_move("left"); }
+                        if (t) {
+                            if (try_move("left")) {
+                                did_move = true;
+                            }
+                        }
                         das_state = kDASWantLeft;
                         das_delay_frame_countdown = kDASDelayFrames;
                         break;
@@ -569,7 +577,11 @@
                         das_delay_frame_countdown--;
                         if (das_delay_frame_countdown <= 0) {
                             // Delay has completed. Begin repeating.
-                            if (t) { did_move ||= try_move("left"); }
+                            if (t) {
+                                if (try_move("left")) {
+                                    did_move = true;
+                                }
+                            }
                             das_state = kDASLeft;
                             das_repeat_frame_countdown = kDASRepeatFrames;
                         }
@@ -577,7 +589,11 @@
                     case kDASLeft:
                         das_repeat_frame_countdown--;
                         if (das_repeat_frame_countdown <= 0) {
-                            if (t) { did_move ||= try_move("left"); }
+                            if (t) {
+                                if (try_move("left")) {
+                                    did_move = true;
+                                }
+                            }
                             das_repeat_frame_countdown = kDASRepeatFrames;
                         }
                         break;
@@ -590,7 +606,11 @@
                     case kDASWantLeft:
                     case kDASNone:
                         // User was moving left or not moving. Make immediate move and start DAS sequence.
-                        if (t) { did_move ||= try_move("right"); }
+                        if (t) {
+                            if (try_move("right")) {
+                                did_move = true;
+                            }
+                        }
                         das_state = kDASWantRight;
                         das_delay_frame_countdown = kDASDelayFrames;
                         break;
@@ -598,7 +618,11 @@
                         das_delay_frame_countdown--;
                         if (das_delay_frame_countdown <= 0) {
                             // Delay has completed. Begin repeating.
-                            if (t) { did_move ||= try_move("right"); }
+                            if (t) {
+                                if (try_move("right")) {
+                                    did_move = true;
+                                }
+                            }
                             das_state = kDASRight;
                             das_repeat_frame_countdown = kDASRepeatFrames;
                         }
@@ -606,7 +630,11 @@
                     case kDASRight:
                         das_repeat_frame_countdown--;
                         if (das_repeat_frame_countdown <= 0) {
-                            if (t) { did_move ||= try_move("right"); }
+                            if (t) {
+                                if (try_move("right")) {
+                                    did_move = true;
+                                }
+                            }
                             das_repeat_frame_countdown = kDASRepeatFrames;
                         }
                         break;
@@ -1592,6 +1620,33 @@
                 [
                     ".....",
                     "##...",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "....."
+                ]);
+        }
+        // Moving in both directions results in no move.
+        {
+            const game = game_make({ grid: { use_test_grid: true } });
+            const grid = game.get_grid();
+            game.spawn_tetrimino();
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".##..",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "....."
+                ]);
+            game.move_left();
+            game.move_right();
+            game.tick_frame();
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".##..",
                     ".....",
                     ".....",
                     ".....",
