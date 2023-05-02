@@ -84,6 +84,39 @@
             rotation_index: opts.rotation_index || 0
         };
 
+        function make_offsets(pictures) {
+            const offsets = [];
+            pictures.forEach((picture) => {
+                let iOrigin = null;
+                let jOrigin = null;
+                for (let i = 0; i < picture.length; i++) {
+                    for (let j = 0; j < picture[i].length; j++) {
+                        if (picture[i][j] == "O") {
+                            iOrigin = i;
+                            jOrigin = j;
+                            break;
+                        }
+                    }
+                }
+                console.assert(iOrigin !== null && jOrigin !== null)
+                const rotation = [];
+                for (let i = 0; i < picture.length; i++) {
+                    for (let j = 0; j < picture[i].length; j++) {
+                        if (picture[i][j] == "#" || picture[i][j] == "O") {
+                            rotation.push(
+                                {
+                                    iOffset: i - iOrigin,
+                                    jOffset: j - jOrigin
+                                }
+                            )
+                        }
+                    }
+                }
+                offsets.push(rotation);
+            });
+            return offsets;
+        }
+
         const rotation_map = {
             /* Test shape is two blocks.
              * O is the origin.
@@ -92,18 +125,61 @@
              *   OX   O   XO   O
              *        X
              */
-            "test": [
-                [{ iOffset: 0, jOffset: 0 }, { iOffset: 0, jOffset: 1 }],
-                [{ iOffset: 0, jOffset: 0 }, { iOffset: 1, jOffset: 0 }],
-                [{ iOffset: 0, jOffset: 0 }, { iOffset: 0, jOffset: -1 }],
-                [{ iOffset: 0, jOffset: 0 }, { iOffset: 1, jOffset: 0 }]
-            ],
+
+            "test":
+                make_offsets([
+                    [
+                        "...",
+                        ".O#",
+                        "..."
+                    ],
+                    [
+                        "...",
+                        ".O.",
+                        ".#."
+                    ],
+                    [
+                        "...",
+                        "#O.",
+                        "..."
+                    ],
+                    [
+                        ".#.",
+                        ".O.",
+                        "..."
+                    ]
+                ]),
 
             /* I
              * 
              */
             "I": [
-
+                make_offsets([
+                    [
+                        "....",
+                        "#O##",
+                        "....",
+                        "...."
+                    ],
+                    [
+                        "..#.",
+                        "..O.",
+                        "..#.",
+                        "..#."
+                    ],
+                    [
+                        "....",
+                        "....",
+                        "##O#",
+                        "...."
+                    ],
+                    [
+                        ".#..",
+                        ".#..",
+                        ".O..",
+                        ".#.."
+                    ],
+                ])
             ]
         }
 
