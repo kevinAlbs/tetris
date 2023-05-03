@@ -1572,7 +1572,98 @@
                     "FF..."
                 ]);
         }
+        // Tests locks after 15 rotations if next gravity application results in colliding below.
+        // This is expected even if a rotation results in the tetrimino not colliding below.
+        {
+            const game = game_make({ grid: { use_test_grid: true }, fixed_gravity: 1 / 20 });
+            game.add_tetrimino(tetrimino_make({ i: 4, j: 2 }));
+            game.get_grid().get(5, 2).filled = true;
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "..##.",
+                    "..F.."
+                ]);
+            // Rotate 18 times.
+            for (let i = 0; i < 18; i++) {
+                game.rotate_right();
+                game.tick_frame();
+            }
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".##..",
+                    ".....",
+                    "..F.."
+                ]);
+            // Wait for gravity to apply.
+            for (let i = 0; i < 2; i++) {
+                game.tick_frame();
+            }
+            // Expect immediate lock.
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".FF..",
+                    "..F.."
+                ]);
+        }
+        // Tests does not lock after 15 rotations if next gravity application results in not colliding below.
+        // This is expected even if a rotation results in the tetrimino not colliding below.
+        {
+            const game = game_make({ grid: { use_test_grid: true }, fixed_gravity: 1 / 20 });
+            game.add_tetrimino(tetrimino_make({ i: 4, j: 2 }));
+            game.get_grid().get(5, 2).filled = true;
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "..##.",
+                    "..F.."
+                ]);
+            // Rotate 18 times.
+            for (let i = 0; i < 18; i++) {
+                game.rotate_right();
+                game.tick_frame();
+            }
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".##..",
+                    ".....",
+                    "..F.."
+                ]);
+            // Wait for gravity to apply.
+            for (let i = 0; i < 2; i++) {
+                game.move_left();
+                game.tick_frame();
+            }
+            // Expect no lock since nothing below. 
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "##...",
+                    "..F.."
+                ]);
+        }
+
     }
+
 
     function test_rotate() {
         // Test basic rotate.
