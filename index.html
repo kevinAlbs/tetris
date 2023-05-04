@@ -953,23 +953,27 @@
             // Tetriminos move at a rate of `gravity` cells per frame.
             if (t) {
                 let gravity = obj.get_gravity();
-                // From https://tetris.wiki/Drop
-                // "Soft dropping a tetromino generally makes it falls at around 20 to 60 blocks per second, as fast as or faster than DAS"
-                // tetris.com appears to use the same speed as DAS. Default DAS is 50ms.
-                // 50ms is .3 frames.
-                if (in_soft_drop && gravity < .3) {
-                    gravity_counter += .3;
+                if (is_colliding_below()) {
+                    gravity_counter = 0;
                 } else {
-                    gravity_counter += gravity;
-                }
-
-                while (gravity_counter >= 1) {
-                    if (!is_colliding_below()) {
-                        t.i++;
+                    // From https://tetris.wiki/Drop
+                    // "Soft dropping a tetromino generally makes it falls at around 20 to 60 blocks per second, as fast as or faster than DAS"
+                    // tetris.com appears to use the same speed as DAS. Default DAS is 50ms.
+                    // 50ms is .3 frames.
+                    if (in_soft_drop && gravity < .3) {
+                        gravity_counter += .3;
+                    } else {
+                        gravity_counter += gravity;
                     }
-                    gravity_counter -= 1;
-                    if (gravity_counter < 0) {
-                        gravity_counter = 0;
+
+                    while (gravity_counter >= 1) {
+                        if (!is_colliding_below()) {
+                            t.i++;
+                        }
+                        gravity_counter -= 1;
+                        if (gravity_counter < 0) {
+                            gravity_counter = 0;
+                        }
                     }
                 }
             }
@@ -992,6 +996,7 @@
                     }
                 }
             } else {
+                // If we were colliding below, and now are not
                 locking = false;
             }
 
@@ -1282,6 +1287,59 @@
                     ".....",
                     "....."
                 ]);
+        }
+        // Test gravity resets if a tetrimino is moved from colliding below, to not colliding below.
+        {
+
+            const game = game_make({ grid: { use_test_grid: true }, fixed_gravity: .1 });
+            game.add_tetrimino(tetrimino_make({ i: 4 }));
+            game.get_grid().get(5, 2).filled = true;
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".##..",
+                    "..F.."
+                ]);
+            for (let i = 0; i < 9; i++) {
+                game.tick_frame();
+            }
+            game.move_left();
+            game.tick_frame();
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "##...",
+                    "..F.."
+                ]);
+            for (let i = 0; i < 9; i++) {
+                game.tick_frame();
+                assert_rendered(game,
+                    [
+                        ".....",
+                        ".....",
+                        ".....",
+                        ".....",
+                        "##...",
+                        "..F.."
+                    ]);
+            }
+            game.tick_frame();
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "##F.."
+                ]);
+
         }
     }
     function test_lock() {
