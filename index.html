@@ -995,8 +995,7 @@
                 }
             }
 
-            // Start lock timer.
-            // If Tetrimino is colliding with block below, start the lock timer.
+            // Check locking state.
             if (t) {
                 if (locking) {
                     // Reset locking if tetrimino moved below the row it started locking.
