@@ -393,6 +393,18 @@
             }
         };
 
+        obj.get_lowest_i = function () {
+            const coords = obj.get_coordinates();
+            let max = coords[0].i;
+            for (let i = 1; i < coords.length; i++) {
+                const pair = coords[i];
+                if (pair.i > max) {
+                    max = pair.i;
+                }
+            }
+            return max;
+        }
+
         obj.get_height = function () {
             const coords = obj.get_coordinates();
             let min = coords[0].i;
@@ -453,6 +465,9 @@
         let lock_timer_ms = 0;
         let locking = false;
         let lock_delay_reset_counter = 0;
+        // locking_row is the row collided when entering the locking state.
+        // If a tetrimino moves past this row, locking resets.
+        let locking_row = 0;
         const kDASDelayFrames = 10;
         let das_delay_frame_countdown = 0;
         const kDASRepeatFrames = 3;
@@ -951,6 +966,7 @@
 
             // Apply gravity.
             // Tetriminos move at a rate of `gravity` cells per frame.
+            let applied_gravity = false;
             if (t) {
                 let gravity = obj.get_gravity();
                 if (is_colliding_below()) {
@@ -969,6 +985,7 @@
                     while (gravity_counter >= 1) {
                         if (!is_colliding_below()) {
                             t.i++;
+                            applied_gravity = true;
                         }
                         gravity_counter -= 1;
                         if (gravity_counter < 0) {
@@ -980,12 +997,15 @@
 
             // Start lock timer.
             // If Tetrimino is colliding with block below, start the lock timer.
-            if (t && is_colliding_below()) {
-                if (!locking) {
-                    locking = true;
-                    lock_timer_ms = get_lock_delay_ms() + kMSPerFrame; // Add 1 frame so locking state excludes current frame.
-                    lock_delay_reset_counter = 0;
-                } else {
+            if (t) {
+                if (locking) {
+                    // Reset locking if tetrimino moved below the row it started locking.
+                    if (applied_gravity && t.get_lowest_i() > locking_row) {
+                        locking = false;
+                    }
+                }
+
+                if (locking) {
                     // From https://harddrop.com/wiki/Tetris_at_tetris.com:
                     // "The game uses move-reset lock delay. That means every time a piece is moved or rotated, lock delay is reset and the piece is still active until the delay runs out (or the piece is moved or rotated 15 times before descending)."
                     if (did_move || did_rotate) {
@@ -995,16 +1015,30 @@
                         // From https://tetris.wiki/Tetris_Guideline
                     }
                 }
-            } else {
-                // If we were colliding below, and now are not
-                locking = false;
+
+                // Start locking if tetrimino is colliding below.
+                if (!locking) {
+                    if (is_colliding_below()) {
+                        locking = true;
+                        locking_row = t.get_lowest_i();
+                        lock_timer_ms = get_lock_delay_ms() + kMSPerFrame; // Add 1 frame so locking state excludes current frame.
+                        lock_delay_reset_counter = 0;
+                    }
+                }
+
+                // Reset lock timer when not colliding below.
+                if (locking) {
+                    if (!is_colliding_below()) {
+                        lock_timer_ms = get_lock_delay_ms() + kMSPerFrame; // Add 1 frame so locking state excludes current frame.
+                    }
+                }
             }
 
             // Apply lock.
             let fill_occurred = false;
             if (locking) {
                 lock_timer_ms -= kMSPerFrame;
-                if (lock_timer_ms <= 0 || lock_delay_reset_counter >= 15) {
+                if (is_colliding_below() && (lock_timer_ms <= 0 || lock_delay_reset_counter >= 15)) {
                     let is_visible = false;
                     // Fill cells with tetrimino.
                     const coords = t.get_coordinates();
@@ -1024,6 +1058,7 @@
                     tetrimino = null;
                     fill_occurred = true;
                     hold_lock = false;
+                    locking = false;
                 }
             }
 
@@ -1645,8 +1680,22 @@
                     "..##.",
                     "..F.."
                 ]);
-            // Rotate 18 times.
-            for (let i = 0; i < 18; i++) {
+            // Rotate 15 times.
+            for (let i = 0; i < 15; i++) {
+                game.rotate_right();
+                game.tick_frame();
+            }
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".....",
+                    "..#..",
+                    "..#..",
+                    ".....",
+                    "..F.."
+                ]);
+            // Rotate 2 more times. Expect immediate lock.
+            for (let i = 0; i < 2; i++) {
                 game.rotate_right();
                 game.tick_frame();
             }
@@ -1655,26 +1704,12 @@
                     ".....",
                     ".....",
                     ".....",
-                    ".##..",
-                    ".....",
-                    "..F.."
-                ]);
-            // Wait for gravity to apply.
-            for (let i = 0; i < 2; i++) {
-                game.tick_frame();
-            }
-            // Expect immediate lock.
-            assert_rendered(game,
-                [
-                    ".....",
-                    ".....",
-                    ".....",
-                    ".....",
-                    ".FF..",
+                    "..F..",
+                    "..F..",
                     "..F.."
                 ]);
         }
-        // Tests does not lock after 15 rotations if next gravity application results in not colliding below.
+        // Tests does not lock after 15 rotations if tetrimino moves past previous locking row.
         // This is expected even if a rotation results in the tetrimino not colliding below.
         {
             const game = game_make({ grid: { use_test_grid: true }, fixed_gravity: 1 / 20 });
@@ -1689,8 +1724,8 @@
                     "..##.",
                     "..F.."
                 ]);
-            // Rotate 18 times.
-            for (let i = 0; i < 18; i++) {
+            // Rotate 15 times.
+            for (let i = 0; i < 15; i++) {
                 game.rotate_right();
                 game.tick_frame();
             }
@@ -1698,25 +1733,26 @@
                 [
                     ".....",
                     ".....",
-                    ".....",
-                    ".##..",
+                    "..#..",
+                    "..#..",
                     ".....",
                     "..F.."
                 ]);
-            // Wait for gravity to apply.
-            for (let i = 0; i < 2; i++) {
-                game.move_left();
+            // Rotate 2 more times. Expect immediate lock.
+            game.move_left();
+            // Wait for two gravity applications.
+            for (let i = 0; i < 20 + 20; i++) {
                 game.tick_frame();
             }
-            // Expect no lock since nothing below. 
+            // Expect no lock. 
             assert_rendered(game,
                 [
                     ".....",
                     ".....",
                     ".....",
                     ".....",
-                    "##...",
-                    "..F.."
+                    ".#...",
+                    ".#F.."
                 ]);
         }
 
