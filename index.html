@@ -2389,7 +2389,7 @@
             const game = game_make({ grid: { use_test_grid: true, fixed_gravity: 1 } });
             const grid = game.get_grid();
             for (let i = 1; i < grid.nrows(); i++) {
-                for (let j = 0; j < grid.ncols(); j++) {
+                for (let j = 0; j < grid.ncols() - 1; j++) {
                     grid.get(i, j).filled = true;
                 }
             }
@@ -2398,11 +2398,11 @@
             assert_rendered(game,
                 [
                     ".##F.",
-                    "FFFFF",
-                    "FFFFF",
-                    "FFFFF",
-                    "FFFFF",
-                    "FFFFF"],
+                    "FFFF.",
+                    "FFFF.",
+                    "FFFF.",
+                    "FFFF.",
+                    "FFFF."],
             );
             console.assert(!game.get_has_lost());
             game.rotate_right();
@@ -2418,11 +2418,11 @@
                     "..#..",
                     "-----",
                     "..#F.",
-                    "FFFFF",
-                    "FFFFF",
-                    "FFFFF",
-                    "FFFFF",
-                    "FFFFF"], { render_buffer: true }
+                    "FFFF.",
+                    "FFFF.",
+                    "FFFF.",
+                    "FFFF.",
+                    "FFFF."], { render_buffer: true }
             );
             game.rotate_right();
             game.tick_frame(); // Tick without moving right to reset DAS.
@@ -2438,11 +2438,11 @@
                     "..##.",
                     "-----",
                     "...F.",
-                    "FFFFF",
-                    "FFFFF",
-                    "FFFFF",
-                    "FFFFF",
-                    "FFFFF"], { render_buffer: true }
+                    "FFFF.",
+                    "FFFF.",
+                    "FFFF.",
+                    "FFFF.",
+                    "FFFF."], { render_buffer: true }
             );
             // Wait for lock.
             for (let i = 0; i < 30; i++) {
