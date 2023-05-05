@@ -483,6 +483,12 @@
         // hold_lock is true when a tetrimino has been put in hold.
         // When hold_lock is true, another tetrimino cannot be put in hold until the current tetrimino locks.
         let hold_lock = false;
+        // score_message is set to the most recent score message.
+        let score_message = "";
+
+        obj.get_score_message = function () {
+            return score_message;
+        }
 
         obj.get_entry_delay_frames = function () {
             return kEntryDelayFrames;
@@ -702,11 +708,12 @@
 
         obj.spawn_tetrimino = function (opts) {
             let tetrimino_type;
-            if (game_opts.grid && game_opts.grid.use_test_grid) {
+            if (opts && opts.tetrimino_type) {
+                tetrimino_type = opts.tetrimino_type;
+            }
+            else if (game_opts.grid && game_opts.grid.use_test_grid) {
                 // Spawn a test piece.
                 tetrimino_type = "test";
-            } else if (opts && opts.tetrimino_type) {
-                tetrimino_type = opts.tetrimino_type;
             } else {
                 console.assert(false, "Not implemented yet");
                 return;
@@ -738,6 +745,10 @@
                 default:
                     console.assert(false, "do not know how to spawn tetrimino type: %s", tetrimino_type);
                     return;
+            }
+
+            if (game_opts.grid && game_opts.grid.use_test_grid) {
+                start_j = 1;
             }
 
             const t = tetrimino_make({
@@ -2590,6 +2601,85 @@
             }
         }
     }
+
+    function test_scoring() {
+        function apply_fill(grid, picture) {
+            console.assert(grid.nrows() == picture.length);
+            for (let i = 0; i < grid.nrows(); i++) {
+                console.assert(grid.ncols() == picture[i].length);
+                for (let j = 0; j < grid.ncols(); j++) {
+                    grid.get(i, j).filled = (picture[i][j] == "F");
+                }
+            }
+        }
+        function await_grid(game, picture) {
+            const kMaxTicks = 100;
+            let got = null;;
+            let expected = null;
+            for (let i = 0; i < kMaxTicks; i++) {
+                got = game.render_text();
+                expected = picture.join("\n");
+                if (got == expected) {
+                    return;
+                }
+                game.tick_frame();
+            }
+            console.assert(false, "after waiting for %d ticks, did not get expected grid:\n%s\ngot grid:\n%s\n", kMaxTicks, expected, got);
+        }
+
+        function expect_score_message(game, expect) {
+            const got = game.get_score_message();
+            console.assert(got == expect, "expected: '%s', got '%s'", expect, got);
+        }
+        // Test mini-T spin single.
+        {
+            const game = game_make({ grid: { use_test_grid: true }, fixed_gravity: 1 });
+            apply_fill(game.get_grid(), [
+                ".....",
+                ".....",
+                ".....",
+                ".....",
+                ".....",
+                ".FFFF"
+            ])
+            game.spawn_tetrimino({ tetrimino_type: "T" });
+            assert_rendered(game,
+                [
+                    ".#...",
+                    "###..",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".FFFF"],
+            );
+            game.tick_frame();
+            game.tick_frame();
+            game.tick_frame();
+            game.rotate_right();
+            game.tick_frame();
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".....",
+                    ".....",
+                    "#....",
+                    "##...",
+                    "#FFFF"],
+            );
+            // Tick until lock.
+            await_grid(game,
+                [
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "F....",
+                    "FF..."],
+            );
+
+            expect_score_message(game, "Mini T-Spin Single");
+        }
+    }
     test_add_tetrimino();
     test_gravity();
     test_lock();
@@ -2603,6 +2693,7 @@
     test_loss();
     test_entry_delay();
     test_hold();
+    test_scoring();
     // Tests ... end
 
     function test_live() {
