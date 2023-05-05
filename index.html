@@ -521,6 +521,9 @@
         let hold_lock = false;
         // score_message is set to the most recent score message.
         let score_message = "";
+        // score_value is set to the most recent score value.
+        let score_value = 0;
+        let score_total = 0;
         // score_did_rotate_last tracks if the last maneuver was a rotation.
         // This is used to determine T-Spin: "The last maneuver of the T tetrimino must be a rotation."
         let score_did_rotate_last = false;
@@ -531,6 +534,11 @@
         obj.get_score_message = function () {
             return score_message;
         }
+
+        // get_score_value returns the most recent score value.
+        obj.get_score_value = function () {
+            return score_value;
+        };
 
         obj.get_entry_delay_frames = function () {
             return kEntryDelayFrames;
@@ -1212,6 +1220,7 @@
                         }
                     }
 
+                    score_value = 0;
                     if (lines_cleared > 0) {
                         let line_clear_message = "";
                         switch (lines_cleared) {
@@ -2766,9 +2775,11 @@
             console.assert(false, "after waiting for %d ticks, did not get expected grid:\n%s\ngot grid:\n%s\n", kMaxTicks, expected, got);
         }
 
-        function expect_score_message(game, expect) {
-            const got = game.get_score_message();
-            console.assert(got == expect, "expected: '%s', got '%s'", expect, got);
+        function expect_score_message(game, expect_msg, expect_value) {
+            const got_msg = game.get_score_message();
+            console.assert(expect_msg == got_msg, "expected: '%s', got '%s'", expect_msg, got_msg);
+            const got_value = game.get_score_value();
+            console.assert(expect_value == got_value, "expected value %d, got %d", expect_value, got_value);
         }
         // Test mini-T spin single.
         {
@@ -2816,7 +2827,7 @@
                     "FF..."],
             );
 
-            expect_score_message(game, "Mini T-Spin Single");
+            expect_score_message(game, "Mini T-Spin Single", 200);
         }
     }
     test_add_tetrimino();
