@@ -450,6 +450,42 @@
             return kick_map[obj.type][obj.rotation_index][dir];
         };
 
+        obj.get_type = function () {
+            return obj.type;
+        }
+
+        obj.get_front_corners = function () {
+            console.assert(obj.type == "T");
+            switch (obj.rotation_index) {
+                case 0:
+                    return [{ i: obj.i - 1, j: obj.j - 1 }, { i: obj.i - 1, j: obj.j + 1 }];
+                case 1:
+                    return [{ i: obj.i - 1, j: obj.j + 1 }, { i: obj.i + 1, j: obj.j + 1 }];
+                case 2:
+                    return [{ i: obj.i + 1, j: obj.j - 1 }, { i: obj.i + 1, j: obj.j + 1 }];
+                case 3:
+                    return [{ i: obj.i + 1, j: obj.j - 1 }, { i: obj.i - 1, j: obj.j - 1 }];
+                default:
+                    console.assert(false, "unexpected rotation index: %d", rotation_index);
+            }
+        }
+
+        obj.get_back_corners = function () {
+            console.assert(obj.type == "T");
+            switch (obj.rotation_index) {
+                case 0:
+                    return [{ i: obj.i + 1, j: obj.j - 1 }, { i: obj.i + 1, j: obj.j + 1 }];
+                case 1:
+                    return [{ i: obj.i - 1, j: obj.j - 1 }, { i: obj.i + 1, j: obj.j - 1 }];
+                case 2:
+                    return [{ i: obj.i - 1, j: obj.j - 1 }, { i: obj.i - 1, j: obj.j + 1 }];
+                case 3:
+                    return [{ i: obj.i - 1, j: obj.j + 1 }, { i: obj.i + 1, j: obj.j + 1 }];
+                default:
+                    console.assert(false, "unexpected rotation index: %d", rotation_index);
+            }
+        }
+
         return obj;
     }
 
@@ -485,6 +521,12 @@
         let hold_lock = false;
         // score_message is set to the most recent score message.
         let score_message = "";
+        // score_did_rotate_last tracks if the last maneuver was a rotation.
+        // This is used to determine T-Spin: "The last maneuver of the T tetrimino must be a rotation."
+        let score_did_rotate_last = false;
+        // score_last_kick_applied tracks the last kick applied to a rotation.
+        // This is used to determine T-Spin: "if the last rotation that kicked the T moves its center 1 by 2 blocks (the last rotation offset of SRS), it is still a proper T-spin."
+        let score_last_kick_applied = { i: 0, j: 0 };
 
         obj.get_score_message = function () {
             return score_message;
@@ -644,6 +686,7 @@
                 return false;
             }
 
+            score_last_kick_applied = kick_to_apply;
             // Apply kick to position.
             t.i += kick_to_apply.i;
             t.j += kick_to_apply.j;
@@ -779,6 +822,9 @@
             if (das_state == kDASLeft || das_state == kDASRight) {
                 das_repeat_frame_countdown = kDASRepeatFrames;
             }
+
+            // Reset T-Spin eligibility.
+            score_did_rotate_last = false;
         }
 
         function try_spawn() {
@@ -946,7 +992,7 @@
                 if (!hold_lock) {
                     hold_lock = true;
                     const prev_hold_tetrimino_type = hold_tetrimino_type;
-                    hold_tetrimino_type = tetrimino.type;
+                    hold_tetrimino_type = tetrimino.get_type();
                     tetrimino = null;
                     t = null;
                     // Immediately spawn next.
@@ -1046,6 +1092,11 @@
 
             // Apply lock.
             let fill_occurred = false;
+            // Store tetrimino for scoring evaluation later in the frame.
+            let score_tetrimino = null;
+            if (t) {
+                score_tetrimino = t;
+            }
             if (locking) {
                 lock_timer_ms -= kMSPerFrame;
                 if (is_colliding_below() && (lock_timer_ms <= 0 || lock_delay_reset_counter >= 15)) {
@@ -1066,6 +1117,7 @@
                     }
                     // Reset tetrimino.
                     tetrimino = null;
+                    t = null;
                     fill_occurred = true;
                     hold_lock = false;
                     locking = false;
@@ -1073,8 +1125,8 @@
             }
 
             // Check for line clears.
+            let lines_cleared = 0;
             if (fill_occurred) {
-                let lines_cleared = 0;
                 for (let i = 0; i < grid.nrows(); i++) {
                     let can_be_cleared = true;
                     for (let j = 0; j < grid.ncols(); j++) {
@@ -1102,6 +1154,93 @@
 
                 if (lines_cleared > 0) {
                     total_lines_cleared += lines_cleared;
+                }
+            }
+
+            // Apply scoring.
+            {
+                const kTSpinNone = 0;
+                const kTSpinMini = 1;
+                const kTSpin = 2;
+                let t_spin_type = kTSpinNone;
+
+                // Determine if tetrimino is eligible for a T-Spin.
+                // "The last maneuver of the T tetrimino must be a rotation."
+                if (did_rotate) {
+                    score_did_rotate_last = true;
+                }
+                if (applied_gravity) {
+                    score_did_rotate_last = false;
+                }
+                if (did_move) {
+                    score_did_rotate_last = false;
+                }
+
+                if (fill_occurred) {
+                    // Check for T-Spin.
+                    if (score_tetrimino.get_type() == "T" && score_did_rotate_last) {
+                        const fcs = score_tetrimino.get_front_corners();
+                        console.assert(fcs.length == 2);
+                        let fcs_filled = 0;
+                        fcs.forEach((fc) => {
+                            if (!grid.has(fc.i, fc.j) || grid.get(fc.i, fc.j).filled) {
+                                fcs_filled++;
+                            }
+                        });
+
+                        const bcs = score_tetrimino.get_back_corners();
+                        console.assert(bcs.length == 2);
+                        let bcs_filled = 0;
+                        bcs.forEach((bc) => {
+                            if (!grid.has(bc.i, bc.j) || grid.get(bc.i, bc.j).filled) {
+                                bcs_filled++;
+                            }
+                        });
+
+                        // Check if mini T-Spin or T-Spin.
+                        if (fcs_filled == 2 && bcs_filled >= 1) {
+                            // "If there are two minoes in the front corners of the 3 by 3 square occupied by the T (the front corners are ones next to the sticking out mino of the T) and at least one mino in the two other corners (to the back), it is a \"proper\" T-spin."
+                            t_spin_type = kTSpin;
+                        } else {
+                            // "Otherwise, if there is only one mino in two front corners and two minoes to the back corners, it is a Mini T-spin. However, if the last rotation that kicked the T moves its center 1 by 2 blocks (the last rotation offset of SRS), it is still a proper T-spin."
+                            if (fcs_filled == 1 && bcs_filled == 2) {
+                                t_spin_type = kTSpinMini;
+                                if (Math.abs(score_last_kick_applied.i) == 1 && Math.abs(score_last_kick_applied.j) == 2) {
+                                    t_spin_type = kTSpin;
+                                }
+                            }
+                        }
+                    }
+
+                    if (lines_cleared > 0) {
+                        let line_clear_message = "";
+                        switch (lines_cleared) {
+                            case 1:
+                                line_clear_message = "Single";
+                                break;
+                            case 2:
+                                line_clear_message = "Double";
+                                break;
+                            case 3:
+                                line_clear_message = "Triple";
+                                break;
+                            case 4:
+                                line_clear_message = "Tetris";
+                                break;
+                            default:
+                                console.assert(false, "Unexpected lines cleared %d while scoring", lines_cleared);
+                                break;
+                        }
+
+                        if (t_spin_type == kTSpin) {
+                            score_message = "T-Spin " + line_clear_message;
+                        }
+                        else if (t_spin_type == kTSpinMini) {
+                            score_message = "Mini T-Spin " + line_clear_message;
+                        } else {
+                            score_message = line_clear_message;
+                        }
+                    }
                 }
             }
         };
