@@ -1,3 +1,27 @@
+# Refactors to consider
+- Rename variables tracking recent state transitions to `did_*`
+    - Rename `fill_occurred` to `did_lock`
+    - Rename `applied_gravity` to `did_apply_gravity`
+- Hide access to invalidated state.
+    - E.g. if `score_did_rotate_last` is false, `score_last_kick_applied` may be stale. Consider updating both:
+        ```js
+            function make_scorer () {
+                const obj = {};
+                let did_rotate_last = false;
+                let last_kick_applied = null;
+                obj.clear_rotate = function () {
+                    did_rotate_last = false;
+                }
+                obj.did_rotate = function(last_kick) {
+                    did_rotate_last = true;
+                    last_kick_applied = last_kick;
+                }
+                obj.did_lock = function () {
+                    // Tetrimino locked. Check for scoring.
+                }
+            }
+        ```
+--
 I had this logic:
 ```javascript
 did_move ||= try_move("left");
