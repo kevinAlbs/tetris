@@ -521,7 +521,7 @@
         let hold_lock = false;
         // score_message is set to the most recent score message.
         let score_message = "";
-        // score_value is set to the most recent score value.
+        // score_value is set to the most recent score value excluding hard/soft drop.
         let score_value = 0;
         let score_total = 0;
         // score_did_rotate_last tracks if the last maneuver was a rotation.
@@ -540,6 +540,10 @@
         obj.get_score_value = function () {
             return score_value;
         };
+
+        obj.get_score_total = function () {
+            return score_total;
+        }
 
         obj.get_entry_delay_frames = function () {
             return kEntryDelayFrames;
@@ -984,17 +988,22 @@
                 das_state = kDASNone;
             }
 
+            // did_hard_drop_cells is the number of cells moved down for a hard drop.
+            let did_hard_drop_cells = 0;
             if (events.hard_drop) {
                 if (t) {
                     while (!is_colliding_below()) {
                         t.i++;
+                        did_hard_drop_cells += 1;
                     }
                     locking = true;
                     lock_timer_ms = 0; // Lock this frame.
                 }
             }
+            let did_soft_drop = false;
             if (events.soft_drop) {
                 in_soft_drop = true;
+                did_soft_drop = true;
             }
 
             if (events.hold) {
@@ -1225,6 +1234,7 @@
                     }
 
                     score_value = 0;
+                    score_message = "";
                     const level = obj.get_level();
 
                     // Apply score and construct message.
@@ -1316,6 +1326,12 @@
                     }
                     score_total += score_value;
                 } // if (fill_occurred)
+
+                // Apply hard_drop and soft_drop score bonus.
+                score_total += did_hard_drop_cells;
+                if (did_soft_drop) {
+                    score_total += 1;
+                }
             }
         };
 
@@ -2846,6 +2862,11 @@
             const got_value = game.get_score_value();
             console.assert(expect_value == got_value, "expected value %d, got %d", expect_value, got_value);
         }
+
+        function expect_score_total(game, expect) {
+            let got = game.get_score_total();
+            console.assert(expect == got, "expected total score %d, got %d", expect, got);
+        }
         // Test mini-T spin single.
         {
             const game = game_make({ grid: { use_test_grid: true }, fixed_gravity: 1 });
@@ -2935,6 +2956,17 @@
             expect_score_message(game, "Tetris", 800);
             do_tetris();
             expect_score_message(game, "Back-to-Back Tetris", 800 * 1.5);
+        }
+
+        // Test soft-drop bonus.
+        {
+            const game = game_make({ grid: { use_test_grid: true }, fixed_gravity: 1 });
+            expect_score_total(game, 0);
+            game.spawn_tetrimino();
+            expect_score_total(game, 0);
+            game.soft_drop();
+            game.tick_frame();
+            expect_score_total(game, 1);
         }
     }
     test_add_tetrimino();
