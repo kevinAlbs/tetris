@@ -531,6 +531,7 @@
         // This is used to determine T-Spin: "if the last rotation that kicked the T moves its center 1 by 2 blocks (the last rotation offset of SRS), it is still a proper T-spin."
         let score_last_kick_applied = { i: 0, j: 0 };
         let score_back_to_back_eligible = false;
+        let combo_counter = -1;
 
         obj.get_score_message = function () {
             return score_message;
@@ -1323,6 +1324,17 @@
                             score_value *= 1.5;
                         }
                         score_back_to_back_eligible = true;
+                    }
+
+                    // Apply combo counter.
+                    if (lines_cleared > 0) {
+                        combo_counter += 1;
+                        if (combo_counter > 0) {
+                            score_value += 50 * combo_counter * level;
+                            score_message += " Combo " + combo_counter;
+                        }
+                    } else {
+                        combo_counter = -1;
                     }
                     score_total += score_value;
                 } // if (fill_occurred)
@@ -2954,6 +2966,12 @@
             }
             do_tetris();
             expect_score_message(game, "Tetris", 800);
+            // Drop another piece to prevent Combo from being applied.
+            {
+                game.spawn_tetrimino({ tetrimino_type: "test" });
+                game.hard_drop();
+                game.tick_frame();
+            }
             do_tetris();
             expect_score_message(game, "Back-to-Back Tetris", 800 * 1.5);
         }
@@ -2967,6 +2985,91 @@
             game.soft_drop();
             game.tick_frame();
             expect_score_total(game, 1);
+        }
+
+        // Test combo bonus.
+        {
+            const game = game_make({ grid: { use_test_grid: true }, fixed_gravity: 1 });
+            apply_fill(game.get_grid(), [
+                ".....",
+                ".....",
+                ".....",
+                ".....",
+                ".FFFF",
+                "FFFF."
+            ]);
+            // Do first Single.
+            {
+                game.spawn_tetrimino({ tetrimino_type: "test" });
+                assert_rendered(game,
+                    [
+                        ".....",
+                        ".##..",
+                        ".....",
+                        ".....",
+                        ".FFFF",
+                        "FFFF."],
+                );
+                game.rotate_right();
+                game.move_left();
+                game.tick_frame();
+                assert_rendered(game,
+                    [
+                        ".....",
+                        ".....",
+                        "#....",
+                        "#....",
+                        ".FFFF",
+                        "FFFF."],
+                );
+                await_grid(game, [
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "F....",
+                    "FFFF."]);
+                expect_score_message(game, "Single", 100);
+            }
+            // Do second Single.
+            {
+                game.spawn_tetrimino({ tetrimino_type: "test" });
+                assert_rendered(game,
+                    [
+                        ".....",
+                        ".##..",
+                        ".....",
+                        ".....",
+                        "F....",
+                        "FFFF."],
+                );
+                game.rotate_right();
+                game.move_right();
+                game.tick_frame();
+                game.tick_frame(); // Tick again to reset DAS.
+                game.move_right();
+                game.tick_frame();
+                game.tick_frame(); // Tick again to reset DAS.
+                game.move_right();
+                game.tick_frame();
+                assert_rendered(game,
+                    [
+                        ".....",
+                        ".....",
+                        ".....",
+                        ".....",
+                        "F...#",
+                        "FFFF#"],
+                );
+                await_grid(game, [
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "F...F"]);
+                expect_score_message(game, "Single Combo 1", 100 + 50);
+            }
         }
     }
     test_add_tetrimino();
