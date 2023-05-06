@@ -530,6 +530,7 @@
         // score_last_kick_applied tracks the last kick applied to a rotation.
         // This is used to determine T-Spin: "if the last rotation that kicked the T moves its center 1 by 2 blocks (the last rotation offset of SRS), it is still a proper T-spin."
         let score_last_kick_applied = { i: 0, j: 0 };
+        let score_back_to_back_eligible = false;
 
         obj.get_score_message = function () {
             return score_message;
@@ -1171,6 +1172,9 @@
                 const kTSpinMini = 1;
                 const kTSpin = 2;
                 let t_spin_type = kTSpinNone;
+                // difficult is true if the action is considered "Difficult" by https://tetris.wiki/Scoring
+                // difficult actions are eligible for the back-to-back.
+                let difficult = false;
 
                 // Determine if tetrimino is eligible for a T-Spin.
                 // "The last maneuver of the T tetrimino must be a rotation."
@@ -1233,14 +1237,17 @@
                             case 1:
                                 score_message += " Single";
                                 score_value = 800 * level;
+                                difficult = true;
                                 break;
                             case 2:
                                 score_message += " Double";
                                 score_value = 1200 * level;
+                                difficult = true;
                                 break;
                             case 3:
                                 score_message += " Triple";
                                 score_value = 1600 * level;
+                                difficult = true;
                                 break;
                             default:
                                 console.assert(false, "Unexpected lines cleared %d while scoring T-Spin", lines_cleared);
@@ -1256,10 +1263,12 @@
                             case 1:
                                 score_message += " Single";
                                 score_value = 200 * level;
+                                difficult = true;
                                 break;
                             case 2:
                                 score_message += " Double";
                                 score_value = 400 * level;
+                                difficult = true;
                                 break;
                             default:
                                 console.assert(false, "Unexpected lines cleared %d while scoring Mini T-Spin", lines_cleared);
@@ -1273,25 +1282,39 @@
                             case 1:
                                 score_message = "Single";
                                 score_value = 100 * level;
+                                // Break the Back-to-Back chain.
+                                score_back_to_back_eligible = false;
                                 break;
                             case 2:
                                 score_message = "Double";
                                 score_value = 300 * level;
+                                // Break the Back-to-Back chain.
+                                score_back_to_back_eligible = false;
                                 break;
                             case 3:
                                 score_message = "Triple";
                                 score_value = 500 * level;
+                                // Break the Back-to-Back chain.
+                                score_back_to_back_eligible = false;
                                 break;
                             case 4:
                                 score_message = "Tetris";
                                 score_value = 800 * level;
+                                difficult = true;
                                 break;
                             default:
                                 console.assert(false, "Unexpected lines cleared %d while scoring", lines_cleared);
                                 break;
                         }
                     }
-                }
+                    if (difficult) {
+                        if (score_back_to_back_eligible) {
+                            score_message = "Back-to-Back " + score_message;
+                            score_value *= 1.5;
+                        }
+                        score_back_to_back_eligible = true;
+                    }
+                } // if (fill_occurred)
             }
         };
 
