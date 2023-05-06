@@ -2870,6 +2870,48 @@
 
             expect_score_message(game, "Mini T-Spin Single", 200);
         }
+
+        // Test back-to-back Tetris.
+        {
+            const game = game_make({ grid: { use_test_grid: true }, fixed_gravity: 1 });
+            function do_tetris() {
+                apply_fill(game.get_grid(), [
+                    ".....",
+                    ".....",
+                    ".FFFF",
+                    ".FFFF",
+                    ".FFFF",
+                    ".FFFF"
+                ])
+                game.spawn_tetrimino({ tetrimino_type: "I" });
+                assert_rendered(game,
+                    [
+                        ".....",
+                        "####.",
+                        ".FFFF",
+                        ".FFFF",
+                        ".FFFF",
+                        ".FFFF"],
+                );
+                game.rotate_right();
+                game.tick_frame();
+                assert_rendered(game,
+                    [
+                        ".....",
+                        "#....",
+                        "#FFFF",
+                        "#FFFF",
+                        "#FFFF",
+                        ".FFFF"],
+                );
+                game.hard_drop();
+                game.tick_frame();
+            }
+            do_tetris();
+            expect_score_message(game, "Tetris", 800);
+            do_tetris();
+            expect_score_message(game, "Back-to-Back Tetris", 800 * 1.5);
+        }
     }
     test_add_tetrimino();
     test_gravity();
