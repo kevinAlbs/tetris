@@ -523,6 +523,8 @@
         let score_message = "";
         // score_value is set to the most recent score value excluding hard/soft drop.
         let score_value = 0;
+        // score_occurred is true for the first frame a score occurs excluding hard/soft drop.
+        let score_occurred = false;
         let score_total = 0;
         // score_did_rotate_last tracks if the last maneuver was a rotation.
         // This is used to determine T-Spin: "The last maneuver of the T tetrimino must be a rotation."
@@ -544,6 +546,10 @@
 
         obj.get_score_total = function () {
             return score_total;
+        };
+
+        obj.get_score_occurred = function () {
+            return score_occurred;
         }
 
         obj.get_entry_delay_frames = function () {
@@ -881,6 +887,7 @@
         obj.tick_frame = function () {
             try_spawn();
 
+            score_occurred = false;
             let t = tetrimino;
             let in_soft_drop = false;
             let did_move = false;
@@ -1001,10 +1008,8 @@
                     lock_timer_ms = 0; // Lock this frame.
                 }
             }
-            let did_soft_drop = false;
             if (events.soft_drop) {
                 in_soft_drop = true;
-                did_soft_drop = true;
             }
 
             if (events.hold) {
@@ -1336,12 +1341,16 @@
                     } else {
                         combo_counter = -1;
                     }
+
+                    if (score_value != 0) {
+                        score_occurred = true;
+                    }
                     score_total += score_value;
                 } // if (fill_occurred)
 
                 // Apply hard_drop and soft_drop score bonus.
-                score_total += did_hard_drop_cells;
-                if (did_soft_drop) {
+                score_total += 2 * did_hard_drop_cells;
+                if (in_soft_drop && applied_gravity) {
                     score_total += 1;
                 }
             }
@@ -1418,6 +1427,8 @@
 
         let tick_counter_ms = 0;
         let prev_ms = null;
+        let flash_score_message_counter_ms = 0;
+        let flash_score_message = "";
         obj.loop = function (opts) {
             const curr_ms = Date.now();
             if (prev_ms === null) {
@@ -1434,7 +1445,18 @@
 
             if (opts && opts.render_text_element) {
                 const text = obj.render_text();
-                opts.render_text_element.innerText = text;
+                if (obj.get_score_occurred()) {
+                    flash_score_message_counter_ms = 1000;
+                }
+                if (flash_score_message_counter_ms > 0) {
+                    if (obj.get_score_value() > 0) {
+                        flash_score_message = obj.get_score_message() + " " + obj.get_score_value();
+                    }
+                    flash_score_message_counter_ms -= kMSPerFrame;
+                } else {
+                    flash_score_message = "";
+                }
+                opts.render_text_element.innerText = "Score: " + obj.get_score_total() + "\n" + flash_score_message + "\n" + text;
             }
             window.requestAnimationFrame(function () {
                 obj.loop(opts);
