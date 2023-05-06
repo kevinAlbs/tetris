@@ -1221,33 +1221,74 @@
                     }
 
                     score_value = 0;
-                    if (lines_cleared > 0) {
-                        let line_clear_message = "";
+                    const level = obj.get_level();
+
+                    // Apply score and construct message.
+                    if (t_spin_type == kTSpin) {
+                        score_message = "T-Spin";
                         switch (lines_cleared) {
+                            case 0:
+                                score_value = 400 * level;
+                                break;
                             case 1:
-                                line_clear_message = "Single";
+                                score_message += " Single";
+                                score_value = 800 * level;
                                 break;
                             case 2:
-                                line_clear_message = "Double";
+                                score_message += " Double";
+                                score_value = 1200 * level;
                                 break;
                             case 3:
-                                line_clear_message = "Triple";
+                                score_message += " Triple";
+                                score_value = 1600 * level;
+                                break;
+                            default:
+                                console.assert(false, "Unexpected lines cleared %d while scoring T-Spin", lines_cleared);
+                                break;
+                        }
+                    }
+                    else if (t_spin_type == kTSpinMini) {
+                        score_message = "Mini T-Spin";
+                        switch (lines_cleared) {
+                            case 0:
+                                score_value = 100 * level;
+                                break;
+                            case 1:
+                                score_message += " Single";
+                                score_value = 200 * level;
+                                break;
+                            case 2:
+                                score_message += " Double";
+                                score_value = 400 * level;
+                                break;
+                            default:
+                                console.assert(false, "Unexpected lines cleared %d while scoring Mini T-Spin", lines_cleared);
+                                break;
+                        }
+                    } else {
+                        console.assert(t_spin_type == kTSpinNone);
+                        switch (lines_cleared) {
+                            case 0:
+                                break;
+                            case 1:
+                                score_message = "Single";
+                                score_value = 100 * level;
+                                break;
+                            case 2:
+                                score_message = "Double";
+                                score_value = 300 * level;
+                                break;
+                            case 3:
+                                score_message = "Triple";
+                                score_value = 500 * level;
                                 break;
                             case 4:
-                                line_clear_message = "Tetris";
+                                score_message = "Tetris";
+                                score_value = 800 * level;
                                 break;
                             default:
                                 console.assert(false, "Unexpected lines cleared %d while scoring", lines_cleared);
                                 break;
-                        }
-
-                        if (t_spin_type == kTSpin) {
-                            score_message = "T-Spin " + line_clear_message;
-                        }
-                        else if (t_spin_type == kTSpinMini) {
-                            score_message = "Mini T-Spin " + line_clear_message;
-                        } else {
-                            score_message = line_clear_message;
                         }
                     }
                 }
