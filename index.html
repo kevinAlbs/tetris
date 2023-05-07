@@ -534,6 +534,7 @@
         let score_last_kick_applied = { i: 0, j: 0 };
         let score_back_to_back_eligible = false;
         let combo_counter = -1;
+        let spawn_shuffle = [];
 
         obj.get_score_message = function () {
             return score_message;
@@ -769,6 +770,14 @@
             tetrimino = t;
         };
 
+        function shuffle(arr) {
+            for (let src = 0; src < arr.length; src++) {
+                let dst = Math.floor(Math.random() * arr.length);
+                let tmp = arr[src];
+                arr[src] = arr[dst];
+                arr[dst] = tmp;
+            }
+        }
         obj.spawn_tetrimino = function (opts) {
             let tetrimino_type;
             if (opts && opts.tetrimino_type) {
@@ -778,8 +787,14 @@
                 // Spawn a test piece.
                 tetrimino_type = "test";
             } else {
-                console.assert(false, "Not implemented yet");
-                return;
+                const types = "ISZTOJL".split("");
+                while (spawn_shuffle.length < types.length * 2) {
+                    shuffle(types);
+                    types.forEach((type) => {
+                        spawn_shuffle.push(type);
+                    })
+                }
+                tetrimino_type = spawn_shuffle.shift(1);
             }
             let start_i;
             let start_j;
@@ -3111,11 +3126,11 @@
     // Tests ... end
 
     function test_live() {
-        const game = game_make({ grid: { use_test_grid: true }, enable_spawn: true });
+        const game = game_make({ grid: { use_test_grid: false }, enable_spawn: true });
         game.register_event_listeners();
         game.loop({
             render_text_element: document.querySelector("#display_text")
         });
     }
-    // test_live();
+    test_live();
 </script>
