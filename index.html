@@ -1509,7 +1509,7 @@
                 } else {
                     flash_score_message = "";
                 }
-                opts.render_text_element.innerText = "Score: " + obj.get_score_total() + "\n" + flash_score_message + "\n" + text;
+                opts.render_text_element.innerText = "Level: " + obj.get_level() + "\n" + "Score: " + obj.get_score_total() + "\n" + flash_score_message + "\n" + text;
             }
             window.requestAnimationFrame(function () {
                 obj.loop(opts);
