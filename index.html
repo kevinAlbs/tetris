@@ -84,6 +84,15 @@
             rotation_index: opts.rotation_index || 0
         };
 
+        obj.copy = function () {
+            const tcopy = tetrimino_make(opts);
+            tcopy.i = obj.i;
+            tcopy.j = obj.j;
+            tcopy.type = obj.type;
+            tcopy.rotation_index = obj.rotation_index;
+            return tcopy;
+        };
+
         // make_offsets is a helper to construct a list of rotation offsets.
         function make_offsets(pictures) {
             const offsets = [];
@@ -535,6 +544,7 @@
         let score_back_to_back_eligible = false;
         let combo_counter = -1;
         let spawn_shuffle = [];
+        let ghost_piece = null;
 
         obj.get_score_message = function () {
             return score_message;
@@ -636,10 +646,12 @@
         }
 
         // is_colliding_below returns true if tetrimino has a filled cell or floor below.
-        function is_colliding_below() {
-            console.assert(tetrimino);
-
-            const t = tetrimino;
+        function is_colliding_below(t) {
+            if (!t) {
+                // Default to current tetrimino.
+                console.assert(tetrimino);
+                t = tetrimino;
+            }
             const coords = t.get_coordinates();
             for (let i = 0; i < coords.length; i++) {
                 const pair = coords[i];
@@ -1369,6 +1381,15 @@
                     score_total += 1;
                 }
             }
+
+            if (t) {
+                ghost_piece = t.copy();
+                while (!is_colliding_below(ghost_piece)) {
+                    ghost_piece.i++;
+                }
+            } else {
+                ghost_piece = null;
+            }
         };
 
         // render_text renders the tetris game in text.
@@ -1410,6 +1431,23 @@
                 }
                 text_grid.push(row);
             }
+            if (game_opts && game_opts.show_ghost_piece && ghost_piece) {
+                const coords = ghost_piece.get_coordinates();
+                coords.forEach((pair) => {
+                    let ip = pair.i;
+                    if (opts && opts.render_buffer) {
+                        if (ip < 0) {
+                            ip += grid.nrows();
+                        } else {
+                            ip += grid.nrows() + 1;
+                        }
+                    }
+                    if (ip >= 0 && ip < text_grid.length && pair.j >= 0 && pair.j < text_grid[ip].length) {
+                        text_grid[ip][pair.j] = "G";
+                    }
+                });
+            }
+
             let t = tetrimino;
             if (t) {
                 const coords = t.get_coordinates();
@@ -3126,7 +3164,7 @@
     // Tests ... end
 
     function test_live() {
-        const game = game_make({ grid: { use_test_grid: false }, enable_spawn: true });
+        const game = game_make({ grid: { use_test_grid: false }, enable_spawn: true, show_ghost_piece: true });
         game.register_event_listeners();
         game.loop({
             render_text_element: document.querySelector("#display_text")
