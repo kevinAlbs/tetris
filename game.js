@@ -573,6 +573,13 @@ function game_make(opts) {
         ghost_piece = null;
     };
 
+    let last_n_renders = [];
+    obj.get_debug_info = function () {
+        return {
+            last_n_renders: last_n_renders
+        };
+    }
+
     obj.get_score_message = function () {
         return score_message;
     }
@@ -1427,6 +1434,20 @@ function game_make(opts) {
             }
         } else {
             ghost_piece = null;
+        }
+
+        // store current_render
+        const current_render = this.render_text();
+        if (last_n_renders.length == 0) {
+            last_n_renders.push(current_render);
+        } else {
+            const previous_render = last_n_renders[last_n_renders.length - 1];
+            if (previous_render != current_render) {
+                last_n_renders.push(current_render);
+            }
+        }
+        if (last_n_renders.length > 100) {
+            last_n_renders.shift();
         }
     };
 
