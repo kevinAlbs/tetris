@@ -1258,6 +1258,9 @@
                 if (did_move) {
                     score_did_rotate_last = false;
                 }
+                if (did_hard_drop_cells) {
+                    score_did_rotate_last = false;
+                }
 
                 if (fill_occurred) {
                     // Check for T-Spin.

@@ -1426,6 +1426,42 @@ function test_scoring() {
         expect_score_message(game, "Mini T-Spin Single", 200);
     }
 
+    // Hard drop resets mini-T spin single.
+    {
+        const game = game_make({ grid: { use_test_grid: true }, fixed_gravity: .01 });
+        apply_fill(game.get_grid(), [
+            ".....",
+            ".....",
+            ".....",
+            "F....",
+            "F....",
+            "F.FF."
+        ])
+        game.spawn_tetrimino({ tetrimino_type: "T" });
+        assert_rendered(game,
+            [
+                ".#...",
+                "###..",
+                ".....",
+                "F....",
+                "F....",
+                "F.FF."],
+        );
+        game.rotate_right();
+        game.hard_drop();
+        game.tick_frame();
+        await_grid(game,
+            [
+                ".....",
+                ".....",
+                ".....",
+                "FF...",
+                "FFF..",
+                "FFFF."],
+        );
+
+        expect_score_message(game, "", 0);
+    }
     // Test back-to-back Tetris.
     {
         const game = game_make({ grid: { use_test_grid: true }, fixed_gravity: 1 });
