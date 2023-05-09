@@ -1462,6 +1462,75 @@ function test_scoring() {
 
         expect_score_message(game, "", 0);
     }
+
+    // T-Spin applies to cells before line clear.
+    {
+        const game = game_make({ grid: { use_test_grid: true }, fixed_gravity: .1 });
+        apply_fill(game.get_grid(), [
+            ".....",
+            ".....",
+            ".F...",
+            ".F...",
+            "FF.FF",
+            "F...F"
+        ]);
+        game.spawn_tetrimino({ tetrimino_type: "T" });
+        assert_rendered(game,
+            [
+                ".#...",
+                "###..",
+                ".F...",
+                ".F...",
+                "FF.FF",
+                "F...F"],
+        );
+        game.move_right();
+        game.tick_frame();
+        game.tick_frame(); // Tick again to reset DAS state.
+        game.move_right();
+        game.tick_frame();
+        assert_rendered(game,
+            [
+                "...#.",
+                "..###",
+                ".F...",
+                ".F...",
+                "FF.FF",
+                "F...F"],
+        );
+        await_grid(game,
+            [
+                ".....",
+                ".....",
+                ".F.#.",
+                ".F###",
+                "FF.FF",
+                "F...F"],
+        );
+        game.rotate_right();
+        game.tick_frame();
+        assert_rendered(game,
+            [
+                ".....",
+                ".....",
+                ".F#..",
+                ".F##.",
+                "FF#FF",
+                "F...F"],
+        );
+        await_grid(game,
+            [
+                ".....",
+                ".....",
+                ".....",
+                ".FF..",
+                ".FFF.",
+                "F...F"],
+        );
+
+        expect_score_message(game, "Mini T-Spin Single", 200);
+    }
+
     // Test back-to-back Tetris.
     {
         const game = game_make({ grid: { use_test_grid: true }, fixed_gravity: 1 });

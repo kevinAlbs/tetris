@@ -1204,49 +1204,12 @@
                 }
             }
 
-            // Check for line clears.
-            let lines_cleared = 0;
-            if (fill_occurred) {
-                for (let i = 0; i < grid.nrows(); i++) {
-                    let can_be_cleared = true;
-                    for (let j = 0; j < grid.ncols(); j++) {
-                        if (!grid.get(i, j).filled) {
-                            can_be_cleared = false;
-                            break;
-                        }
-                    }
-                    if (can_be_cleared) {
-                        // Clear, and shift cell fills down.
-                        for (let ip = i; ip >= 0; ip--) {
-                            for (let jp = 0; jp < grid.ncols(); jp++) {
-                                const to = grid.get(ip, jp);
-                                if (ip == 0) {
-                                    to.filed = false;
-                                } else {
-                                    const from = grid.get(ip - 1, jp);
-                                    to.filled = from.filled;
-                                }
-                            }
-                        }
-                        lines_cleared++;
-                    }
-                }
-
-                if (lines_cleared > 0) {
-                    total_lines_cleared += lines_cleared;
-                }
-            }
-
-            // Apply scoring.
-            {
-                const kTSpinNone = 0;
-                const kTSpinMini = 1;
-                const kTSpin = 2;
-                let t_spin_type = kTSpinNone;
-                // difficult is true if the action is considered "Difficult" by https://tetris.wiki/Scoring
-                // difficult actions are eligible for the back-to-back.
-                let difficult = false;
-
+            // Check for T-Spin before clearing lines.
+            const kTSpinNone = 0;
+            const kTSpinMini = 1;
+            const kTSpin = 2;
+            let t_spin_type = kTSpinNone;
+            if (score_tetrimino) {
                 // Determine if tetrimino is eligible for a T-Spin.
                 // "The last maneuver of the T tetrimino must be a rotation."
                 if (did_rotate) {
@@ -1297,7 +1260,52 @@
                             }
                         }
                     }
+                }
+            }
 
+            // Check for line clears.
+            let lines_cleared = 0;
+            if (fill_occurred) {
+                for (let i = 0; i < grid.nrows(); i++) {
+                    let can_be_cleared = true;
+                    for (let j = 0; j < grid.ncols(); j++) {
+                        if (!grid.get(i, j).filled) {
+                            can_be_cleared = false;
+                            break;
+                        }
+                    }
+                    if (can_be_cleared) {
+                        // Clear, and shift cell fills down.
+                        for (let ip = i; ip >= 0; ip--) {
+                            for (let jp = 0; jp < grid.ncols(); jp++) {
+                                const to = grid.get(ip, jp);
+                                if (ip == 0) {
+                                    to.filed = false;
+                                } else {
+                                    const from = grid.get(ip - 1, jp);
+                                    to.filled = from.filled;
+                                }
+                            }
+                        }
+                        lines_cleared++;
+                    }
+                }
+
+                if (lines_cleared > 0) {
+                    total_lines_cleared += lines_cleared;
+                }
+            }
+
+            // Apply scoring.
+            {
+                // difficult is true if the action is considered "Difficult" by https://tetris.wiki/Scoring
+                // difficult actions are eligible for the back-to-back.
+                let difficult = false;
+
+                if (t_spin_type != kTSpinNone) {
+                    difficult = true;
+                }
+                if (fill_occurred) {
                     score_value = 0;
                     score_message = "";
                     const level = obj.get_level();
