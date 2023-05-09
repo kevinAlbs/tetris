@@ -504,7 +504,7 @@
         const obj = {};
         // tetrimino is the active tetrimino.
         let tetrimino = null;
-        const grid = grid_make(opts.grid || {});
+        let grid = grid_make(opts.grid || {});
         let gravity_counter = 0;
         const kMSPerFrame = opts.kMSPerFrame || 1000 / 60;
         let lock_timer_ms = 0;
@@ -545,6 +545,35 @@
         let combo_counter = -1;
         let spawn_shuffle = [];
         let ghost_piece = null;
+
+        obj.reset = function() {
+            tetrimino = null;
+            grid = grid_make(opts.grid || {});
+            gravity_counter = 0;
+            lock_timer_ms = 0;
+            locking = false;
+            lock_delay_reset_counter = 0;
+            locking_row = 0;
+            das_delay_frame_countdown = 0;
+            das_repeat_frame_countdown = 0;
+            das_state = kDASNone;
+            total_lines_cleared = 0;
+            cleared_300 = false;
+            has_lost = false;
+            entry_delay_counter = 0;
+            hold_tetrimino_type = null;
+            hold_lock = false;
+            score_message = "";
+            score_value = 0;
+            score_occurred = false;
+            score_total = 0;
+            score_did_rotate_last = false;
+            score_last_kick_applied = { i: 0, j: 0 };
+            score_back_to_back_eligible = false;
+            combo_counter = -1;
+            spawn_shuffle = [];
+            ghost_piece = null;
+        };
 
         obj.get_score_message = function () {
             return score_message;
@@ -3163,12 +3192,15 @@
     test_scoring();
     // Tests ... end
 
+    let global_game = null;
+
     function test_live() {
         const game = game_make({ grid: { use_test_grid: false }, enable_spawn: true, show_ghost_piece: true });
         game.register_event_listeners();
         game.loop({
             render_text_element: document.querySelector("#display_text")
         });
+        global_game = game;
     }
     test_live();
 </script>
