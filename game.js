@@ -576,6 +576,7 @@ function game_make(opts) {
     let last_n_renders = [];
     obj.get_debug_info = function () {
         return {
+            level: this.get_level(),
             last_n_renders: last_n_renders
         };
     }
@@ -1636,11 +1637,23 @@ function game_make(opts) {
     return obj;
 }
 
+let copy_debug_info = null;
 function main() {
     const game = game_make({ grid: { use_test_grid: false }, enable_spawn: true, show_ghost_piece: true });
     game.register_event_listeners();
     game.loop({
         render_text_element: document.querySelector("#display_text")
     });
+    copy_debug_info = function() {
+        console.log();
+        const debug_info = game.get_debug_info();
+        for (let i = 0; i < debug_info.last_n_renders.length; i++) {
+            debug_info.last_n_renders[i] = debug_info.last_n_renders[i].split("\n");
+        }
+        copy(JSON.stringify(debug_info, null, "    "));
+        console.log("Debug info is copied. Paste into a file. Upload the file to a GitHub issue to report a bug: https://github.com/kevinAlbs/tetris/issues");
+    }
 }
 main();
+
+console.log("To report a bug, copy debug info with: `copy_debug_info()`")
