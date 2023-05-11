@@ -7,7 +7,10 @@ function cell_make() {
 
 function grid_make(opts) {
     opts = opts || {};
-    // Make grid with 20 visible rows and 20 hidden buffer rows above.
+    // hidden contains the 2d grid of visible cells.
+    let visible = [];
+    // visible contains the 2d grid of hidden cells above the visible cells.
+    let hidden = [];
     let nrows = 20;
     let ncols = 10;
     if (opts.use_test_grid || false) {
@@ -15,36 +18,33 @@ function grid_make(opts) {
         ncols = 5;
     }
 
-    const obj = {
-        data: [],
-        buffer: []
-    };
+    const obj = {};
 
     for (let i = 0; i < nrows; i++) {
         const row = [];
         for (let j = 0; j < ncols; j++) {
             row.push(cell_make());
         }
-        obj.data.push(row);
+        visible.push(row);
     }
 
-    // Add hidden buffer rows.
-    // Hidden buffer rows are accessed by calling `get` with a negative row.
+    // Add hidden cells.
+    // Hidden cells are accessed by calling `get` with a negative row.
     for (let i = 0; i < nrows; i++) {
         const row = [];
         for (let j = 0; j < ncols; j++) {
             row.push(cell_make());
         }
-        obj.buffer.push(row);
+        hidden.push(row);
     }
 
     obj.get = function (i, j) {
         console.assert(i >= -nrows && i < nrows);
         console.assert(j >= 0 && j < ncols);
         if (i < 0) {
-            return obj.buffer[-(i + 1)][j];
+            return hidden[-(i + 1)][j];
         }
-        return obj.data[i][j];
+        return visible[i][j];
     }
     obj.has = function (i, j) {
         if (!(i >= -nrows && i < nrows)) {
@@ -65,10 +65,10 @@ function grid_make(opts) {
         return true;
     }
     obj.nrows = function () {
-        return obj.data.length;
+        return visible.length;
     }
     obj.ncols = function () {
-        return obj.data[0].length;
+        return visible[0].length;
     }
     return obj;
 }
