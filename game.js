@@ -1,5 +1,5 @@
 "use strict"
-function cell_make(i, j) {
+function cell_make() {
     return {
         filled: false
     };
@@ -23,7 +23,7 @@ function grid_make(opts) {
     for (let i = 0; i < nrows; i++) {
         const row = [];
         for (let j = 0; j < ncols; j++) {
-            row.push(cell_make(i, j));
+            row.push(cell_make());
         }
         obj.data.push(row);
     }
@@ -33,7 +33,7 @@ function grid_make(opts) {
     for (let i = 0; i < nrows; i++) {
         const row = [];
         for (let j = 0; j < ncols; j++) {
-            row.push(cell_make(i, j));
+            row.push(cell_make());
         }
         obj.buffer.push(row);
     }
@@ -473,7 +473,7 @@ function tetrimino_make(opts) {
             case 3:
                 return [{ i: obj.i + 1, j: obj.j - 1 }, { i: obj.i - 1, j: obj.j - 1 }];
             default:
-                console.assert(false, "unexpected rotation index: %d", rotation_index);
+                console.assert(false, "unexpected rotation index: %d", obj.rotation_index);
         }
     }
 
@@ -489,7 +489,7 @@ function tetrimino_make(opts) {
             case 3:
                 return [{ i: obj.i - 1, j: obj.j + 1 }, { i: obj.i + 1, j: obj.j + 1 }];
             default:
-                console.assert(false, "unexpected rotation index: %d", rotation_index);
+                console.assert(false, "unexpected rotation index: %d", obj.rotation_index);
         }
     }
 
@@ -518,7 +518,6 @@ function game_make(opts) {
     const kDASNone = 0, kDASWantRight = 1, kDASRight = 2, kDASWantLeft = 3, kDASLeft = 4;
     let das_state = kDASNone;
     let total_lines_cleared = 0;
-    let cleared_300 = false;
     let has_lost = false;
     const kEntryDelayFrames = 6;
     let entry_delay_counter = 0;
@@ -556,7 +555,6 @@ function game_make(opts) {
         das_repeat_frame_countdown = 0;
         das_state = kDASNone;
         total_lines_cleared = 0;
-        cleared_300 = false;
         has_lost = false;
         entry_delay_counter = 0;
         hold_tetrimino_type = null;
@@ -1630,7 +1628,7 @@ function game_make(opts) {
         })
 
         // Clear key state on window blur.
-        window.addEventListener("blur", function (e) {
+        window.addEventListener("blur", function () {
             key_states_reset();
         });
     }
