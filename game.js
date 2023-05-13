@@ -1545,9 +1545,21 @@ function game_make(opts) {
     let prev_ms = null;
     let flash_score_message_counter_ms = 0;
     let flash_score_message = "";
+    let paused = false;
+
+    obj.pause_toggle = function () {
+        paused = !paused;
+    };
+
     obj.loop = function (opts) {
         const curr_ms = Date.now();
         if (prev_ms === null) {
+            prev_ms = curr_ms;
+        }
+
+        key_states_apply_paused();
+        // If paused, force delta to be 0 so game state does not increment.
+        if (paused) {
             prev_ms = curr_ms;
         }
         const delta_ms = curr_ms - prev_ms;
@@ -1569,9 +1581,12 @@ function game_make(opts) {
                 if (obj.get_score_value() > 0) {
                     flash_score_message = obj.get_score_message() + " " + obj.get_score_value();
                 }
-                flash_score_message_counter_ms -= kMSPerFrame;
+                flash_score_message_counter_ms -= delta_ms;
             } else {
                 flash_score_message = "";
+            }
+            if (paused) {
+                flash_score_message = "Paused";
             }
             if (obj.get_has_lost()) {
                 flash_score_message = "Game over";
@@ -1579,6 +1594,9 @@ function game_make(opts) {
             opts.render_text_element.innerText = "Level: " + obj.get_level() + "\n" + "Score: " + obj.get_score_total() + "\n" + flash_score_message + "\n" + text;
         }
         window.requestAnimationFrame(function () {
+            if (opts && opts.loop_once) {
+                return;
+            }
             obj.loop(opts);
         });
     }
@@ -1589,6 +1607,7 @@ function game_make(opts) {
     const kKeyUpArrow = 38;
     const kKeySpace = 32;
     const kKeyC = 67;
+    const kKeyP = 80;
     let key_states;
     function key_states_reset() {
         key_states = {};
@@ -1599,8 +1618,11 @@ function game_make(opts) {
         key_states[kKeyUpArrow] = { down: false, pressHandled: false };
         key_states[kKeySpace] = { down: false, pressHandled: false };
         key_states[kKeyC] = { down: false, pressHandled: false };
+        key_states[kKeyP] = { down: false, pressHandled: false };
     }
     key_states_reset();
+    // key_states_apply is expected to be run before each call to tick_frame.
+    // A press event must be handled by a tick_frame (e.g. a hard drop).
     function key_states_apply() {
         if (key_states[kKeyDownArrow].down) obj.soft_drop();
         if (key_states[kKeySpace].down && !key_states[kKeySpace].pressHandled) {
@@ -1616,6 +1638,14 @@ function game_make(opts) {
         if (key_states[kKeyC].down && !key_states[kKeyC].pressHandled) {
             obj.hold();
             key_states[kKeyC].pressHandled = true;
+        }
+    }
+
+    // key_states_apply_paused is expected to be run each loop iteration.
+    function key_states_apply_paused() {
+        if (key_states[kKeyP].down && !key_states[kKeyP].pressHandled) {
+            obj.pause_toggle();
+            key_states[kKeyP].pressHandled = true;
         }
     }
     obj.register_event_listeners = function () {

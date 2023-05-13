@@ -1706,6 +1706,36 @@ function test_debug_info() {
         console.assert(debug_info.last_n_renders.length == 2);
     }
 }
+
+function test_pause() {
+    {
+        const game = game_make({ grid: { use_test_grid: true }, fixed_gravity: 1 });
+        game.spawn_tetrimino({ tetrimino_type: "test" });
+        assert_rendered(game,
+            [
+                ".....",
+                ".##..",
+                ".....",
+                ".....",
+                ".....",
+                "....."],
+        );
+        game.pause_toggle();
+        game.loop({ test_loop_once: true });
+        window.setTimeout(function () {
+            game.loop({ test_loop_once: true });
+            assert_rendered(game,
+                [
+                    ".....",
+                    ".##..",
+                    ".....",
+                    ".....",
+                    ".....",
+                    "....."],
+            );
+        }, 100);
+    }
+}
 test_add_tetrimino();
 test_gravity();
 test_lock();
@@ -1721,3 +1751,4 @@ test_entry_delay();
 test_hold();
 test_scoring();
 test_debug_info();
+test_pause();
