@@ -1557,7 +1557,7 @@ function game_make(opts) {
             prev_ms = curr_ms;
         }
 
-        key_states_apply_paused();
+        key_states_apply_for_loop();
         // If paused, force delta to be 0 so game state does not increment.
         if (paused) {
             prev_ms = curr_ms;
@@ -1586,10 +1586,10 @@ function game_make(opts) {
                 flash_score_message = "";
             }
             if (paused) {
-                flash_score_message = "Paused";
+                flash_score_message = "Paused. Press (P) to unpause.";
             }
             if (obj.get_has_lost()) {
-                flash_score_message = "Game over";
+                flash_score_message = "Game over. Press (R) to reset.";
             }
             opts.render_text_element.innerText = "Level: " + obj.get_level() + "\n" + "Score: " + obj.get_score_total() + "\n" + flash_score_message + "\n" + text;
         }
@@ -1608,6 +1608,7 @@ function game_make(opts) {
     const kKeySpace = 32;
     const kKeyC = 67;
     const kKeyP = 80;
+    const kKeyR = 82;
     let key_states;
     function key_states_reset() {
         key_states = {};
@@ -1619,6 +1620,7 @@ function game_make(opts) {
         key_states[kKeySpace] = { down: false, pressHandled: false };
         key_states[kKeyC] = { down: false, pressHandled: false };
         key_states[kKeyP] = { down: false, pressHandled: false };
+        key_states[kKeyR] = { down: false, pressHandled: false };
     }
     key_states_reset();
     // key_states_apply is expected to be run before each call to tick_frame.
@@ -1641,11 +1643,17 @@ function game_make(opts) {
         }
     }
 
-    // key_states_apply_paused is expected to be run each loop iteration.
-    function key_states_apply_paused() {
+    // key_states_apply_for_loop is expected to be run each loop iteration.
+    function key_states_apply_for_loop() {
         if (key_states[kKeyP].down && !key_states[kKeyP].pressHandled) {
             obj.pause_toggle();
             key_states[kKeyP].pressHandled = true;
+        }
+        if (key_states[kKeyR].down && !key_states[kKeyR].pressHandled) {
+            if (obj.get_has_lost()) {
+                obj.reset();
+            }
+            key_states[kKeyR].pressHandled = true;
         }
     }
     obj.register_event_listeners = function () {
