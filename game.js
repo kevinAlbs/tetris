@@ -405,7 +405,7 @@ function tetrimino_make(opts) {
     obj.get_lowest_i = function () {
         const coords = obj.get_coordinates();
         let max = coords[0].i;
-        for (let idx = 1; i < coords.length; idx++) {
+        for (let idx = 1; idx < coords.length; idx++) {
             const pair = coords[idx];
             if (pair.i > max) {
                 max = pair.i;
@@ -956,7 +956,6 @@ function game_make(opts) {
         let did_rotate = false;
 
         // Handle events.
-        key_states_apply();
         if (events.rotate_left) {
             if (t) {
                 if (try_rotate("left")) {
@@ -1552,6 +1551,7 @@ function game_make(opts) {
         tick_counter_ms += delta_ms;
 
         while (tick_counter_ms >= kMSPerFrame) {
+            key_states_apply();
             obj.tick_frame();
             tick_counter_ms -= kMSPerFrame;
         }
