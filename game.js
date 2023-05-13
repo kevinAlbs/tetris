@@ -73,6 +73,301 @@ function grid_make(opts) {
     return obj;
 }
 
+// make_offsets is a helper to construct a list of rotation offsets.
+function make_offsets(pictures) {
+    const offsets = [];
+    pictures.forEach((picture) => {
+        let iOrigin = null;
+        let jOrigin = null;
+        for (let i = 0; i < picture.length; i++) {
+            for (let j = 0; j < picture[i].length; j++) {
+                if (picture[i][j] == "O" || picture[i][j] == "X") {
+                    iOrigin = i;
+                    jOrigin = j;
+                    break;
+                }
+            }
+        }
+        console.assert(iOrigin !== null && jOrigin !== null)
+        const rotation = [];
+        for (let i = 0; i < picture.length; i++) {
+            for (let j = 0; j < picture[i].length; j++) {
+                if (picture[i][j] == "#" || picture[i][j] == "X") {
+                    rotation.push(
+                        {
+                            i: i - iOrigin,
+                            j: j - jOrigin
+                        }
+                    )
+                }
+            }
+        }
+        offsets.push(rotation);
+    });
+    return offsets;
+}
+
+const rotation_map = {
+    "test":
+        make_offsets([
+            [
+                "...",
+                ".X#",
+                "..."
+            ],
+            [
+                "...",
+                ".X.",
+                ".#."
+            ],
+            [
+                "...",
+                "#X.",
+                "..."
+            ],
+            [
+                ".#.",
+                ".X.",
+                "..."
+            ]
+        ]),
+
+    "I":
+        make_offsets([
+            [
+                "....",
+                "#X##",
+                "....",
+                "...."
+            ],
+            [
+                "..#.",
+                ".O#.",
+                "..#.",
+                "..#."
+            ],
+            [
+                "....",
+                ".O..",
+                "####",
+                "...."
+            ],
+            [
+                ".#..",
+                ".X..",
+                ".#..",
+                ".#.."
+            ],
+        ]),
+
+    "J":
+        make_offsets([
+            [
+                "#..",
+                "#X#",
+                "...",
+            ],
+            [
+                ".##",
+                ".X.",
+                ".#.",
+            ],
+            [
+                "...",
+                "#X#",
+                "..#",
+            ],
+            [
+                ".#.",
+                ".X.",
+                "##.",
+            ],
+        ]),
+
+    "L": make_offsets([
+        [
+            "..#",
+            "#X#",
+            "...",
+        ],
+        [
+            ".#.",
+            ".X.",
+            ".##",
+        ],
+        [
+            "...",
+            "#X#",
+            "#..",
+        ],
+        [
+            "##.",
+            ".X.",
+            ".#.",
+        ],
+    ]),
+
+    "O": make_offsets([
+        [
+            "##",
+            "X#",
+        ]
+    ]),
+
+    "S": make_offsets([
+        [
+            ".##",
+            "#X.",
+            "...",
+        ],
+        [
+            ".#.",
+            ".X#",
+            "..#",
+        ],
+        [
+            "...",
+            ".X#",
+            "##.",
+        ],
+        [
+            "#..",
+            "#X.",
+            ".#.",
+        ],
+    ]),
+
+    "T": make_offsets([
+        [
+            ".#.",
+            "#X#",
+            "...",
+        ],
+        [
+            ".#.",
+            ".X#",
+            ".#.",
+        ],
+        [
+            "...",
+            "#X#",
+            ".#.",
+        ],
+        [
+            ".#.",
+            "#X.",
+            ".#.",
+        ],
+    ]),
+
+    "Z": make_offsets([
+        [
+            "##.",
+            ".X#",
+            "...",
+        ],
+        [
+            "..#",
+            ".X#",
+            ".#.",
+        ],
+        [
+            "...",
+            "#X.",
+            ".##",
+        ],
+        [
+            ".#.",
+            "#X.",
+            "#..",
+        ],
+    ]),
+}
+
+// kick_map determines which offsets are tested when a rotation fails.
+// kick_map maps the current rotation_index and the desired direction to a sequence of kick values.
+// Refer: https://tetris.wiki/Super_Rotation_System
+const kick_map = {
+    "test": {
+        0: {
+            "left": [{ i: 0, j: 0 }, { i: 1, j: 0 }],
+            "right": [{ i: 0, j: 0 }, { i: -1, j: 0 }]
+        },
+        1: {
+            "left": [{ i: 0, j: 0 }, { i: 0, j: -1 }],
+            "right": [{ i: 0, j: 0 }, { i: 0, j: 1 }]
+        },
+        2: {
+            "left": [{ i: 0, j: 0 }, { i: -1, j: 0 }],
+            "right": [{ i: 0, j: 0 }, { i: 1, j: 0 }]
+        },
+        3: {
+            "left": [{ i: 0, j: 0 }, { i: 0, j: 1 }],
+            "right": [{ i: 0, j: 0 }, { i: 0, j: -1 }]
+        }
+    },
+    "I": {
+        0: {
+            "left": [{ i: 0, j: 0 }, { i: 0, j: -1 }, { i: 0, j: 2 }, { i: -2, j: -1 }, { i: 1, j: 2 }],
+            "right": [{ i: 0, j: 0 }, { i: 0, j: -2 }, { i: 0, j: 1 }, { i: 1, j: -2 }, { i: -2, j: 1 }]
+        },
+        1: {
+            "left": [{ i: 0, j: 0 }, { i: 0, j: 2 }, { i: 0, j: -1 }, { i: -1, j: 2 }, { i: 2, j: -1 }],
+            "right": [{ i: 0, j: 0 }, { i: 0, j: -1 }, { i: 0, j: 2 }, { i: -2, j: -1 }, { i: 1, j: 2 }]
+        },
+        2: {
+            "left": [{ i: 0, j: 0 }, { i: 0, j: 1 }, { i: 0, j: -2 }, { i: 2, j: 1 }, { i: -1, j: -2 }],
+            "right": [{ i: 0, j: 0 }, { i: 0, j: 2 }, { i: 0, j: -1 }, { i: -1, j: 2 }, { i: 2, j: -1 }]
+        },
+        3: {
+            "left": [{ i: 0, j: 0 }, { i: 0, j: -2 }, { i: 0, j: 1 }, { i: 1, j: -2 }, { i: -2, j: 1 }],
+            "right": [{ i: 0, j: 0 }, { i: 0, j: 1 }, { i: 0, j: -2 }, { i: 2, j: 1 }, { i: -1, j: -2 }]
+        }
+    },
+    "J": {
+        0: {
+            "left": [{ i: 0, j: 0 }, { i: 0, j: 1 }, { i: -1, j: 1 }, { i: 2, j: 0 }, { i: 2, j: 1 }],
+            "right": [{ i: 0, j: 0 }, { i: 0, j: -1 }, { i: -1, j: -1 }, { i: 2, j: 0 }, { i: 2, j: -1 }]
+        },
+        1: {
+            "left": [{ i: 0, j: 0 }, { i: 0, j: 1 }, { i: 1, j: 1 }, { i: -2, j: 0 }, { i: -2, j: 1 }],
+            "right": [{ i: 0, j: 0 }, { i: 0, j: 1 }, { i: 1, j: 1 }, { i: -2, j: 0 }, { i: -2, j: 1 }]
+        },
+        2: {
+            "left": [{ i: 0, j: 0 }, { i: 0, j: -1 }, { i: -1, j: -1 }, { i: 2, j: 0 }, { i: 2, j: -1 }],
+            "right": [{ i: 0, j: 0 }, { i: 0, j: 1 }, { i: -1, j: 1 }, { i: 2, j: 0 }, { i: 2, j: 1 }]
+        },
+        3: {
+            "left": [{ i: 0, j: 0 }, { i: 0, j: -1 }, { i: 1, j: -1 }, { i: -2, j: 0 }, { i: -2, j: -1 }],
+            "right": [{ i: 0, j: 0 }, { i: 0, j: -1 }, { i: 1, j: -1 }, { i: -2, j: 0 }, { i: -2, j: -1 }]
+        }
+    },
+    "O": {
+        0: {
+            "left": [{ i: 0, j: 0 }],
+            "right": [{ i: 0, j: 0 }],
+        },
+        1: {
+            "left": [{ i: 0, j: 0 }],
+            "right": [{ i: 0, j: 0 }],
+        },
+        2: {
+            "left": [{ i: 0, j: 0 }],
+            "right": [{ i: 0, j: 0 }],
+        },
+        3: {
+            "left": [{ i: 0, j: 0 }],
+            "right": [{ i: 0, j: 0 }],
+        }
+    },
+};
+
+// JLSTZ all share the same kick values.
+kick_map["L"] = kick_map["J"];
+kick_map["S"] = kick_map["J"];
+kick_map["T"] = kick_map["J"];
+kick_map["Z"] = kick_map["J"];
+
 function tetrimino_make(opts) {
     opts = opts || {};
     const obj = {
@@ -90,301 +385,6 @@ function tetrimino_make(opts) {
         tcopy.rotation_index = obj.rotation_index;
         return tcopy;
     };
-
-    // make_offsets is a helper to construct a list of rotation offsets.
-    function make_offsets(pictures) {
-        const offsets = [];
-        pictures.forEach((picture) => {
-            let iOrigin = null;
-            let jOrigin = null;
-            for (let i = 0; i < picture.length; i++) {
-                for (let j = 0; j < picture[i].length; j++) {
-                    if (picture[i][j] == "O" || picture[i][j] == "X") {
-                        iOrigin = i;
-                        jOrigin = j;
-                        break;
-                    }
-                }
-            }
-            console.assert(iOrigin !== null && jOrigin !== null)
-            const rotation = [];
-            for (let i = 0; i < picture.length; i++) {
-                for (let j = 0; j < picture[i].length; j++) {
-                    if (picture[i][j] == "#" || picture[i][j] == "X") {
-                        rotation.push(
-                            {
-                                i: i - iOrigin,
-                                j: j - jOrigin
-                            }
-                        )
-                    }
-                }
-            }
-            offsets.push(rotation);
-        });
-        return offsets;
-    }
-
-    const rotation_map = {
-        "test":
-            make_offsets([
-                [
-                    "...",
-                    ".X#",
-                    "..."
-                ],
-                [
-                    "...",
-                    ".X.",
-                    ".#."
-                ],
-                [
-                    "...",
-                    "#X.",
-                    "..."
-                ],
-                [
-                    ".#.",
-                    ".X.",
-                    "..."
-                ]
-            ]),
-
-        "I":
-            make_offsets([
-                [
-                    "....",
-                    "#X##",
-                    "....",
-                    "...."
-                ],
-                [
-                    "..#.",
-                    ".O#.",
-                    "..#.",
-                    "..#."
-                ],
-                [
-                    "....",
-                    ".O..",
-                    "####",
-                    "...."
-                ],
-                [
-                    ".#..",
-                    ".X..",
-                    ".#..",
-                    ".#.."
-                ],
-            ]),
-
-        "J":
-            make_offsets([
-                [
-                    "#..",
-                    "#X#",
-                    "...",
-                ],
-                [
-                    ".##",
-                    ".X.",
-                    ".#.",
-                ],
-                [
-                    "...",
-                    "#X#",
-                    "..#",
-                ],
-                [
-                    ".#.",
-                    ".X.",
-                    "##.",
-                ],
-            ]),
-
-        "L": make_offsets([
-            [
-                "..#",
-                "#X#",
-                "...",
-            ],
-            [
-                ".#.",
-                ".X.",
-                ".##",
-            ],
-            [
-                "...",
-                "#X#",
-                "#..",
-            ],
-            [
-                "##.",
-                ".X.",
-                ".#.",
-            ],
-        ]),
-
-        "O": make_offsets([
-            [
-                "##",
-                "X#",
-            ]
-        ]),
-
-        "S": make_offsets([
-            [
-                ".##",
-                "#X.",
-                "...",
-            ],
-            [
-                ".#.",
-                ".X#",
-                "..#",
-            ],
-            [
-                "...",
-                ".X#",
-                "##.",
-            ],
-            [
-                "#..",
-                "#X.",
-                ".#.",
-            ],
-        ]),
-
-        "T": make_offsets([
-            [
-                ".#.",
-                "#X#",
-                "...",
-            ],
-            [
-                ".#.",
-                ".X#",
-                ".#.",
-            ],
-            [
-                "...",
-                "#X#",
-                ".#.",
-            ],
-            [
-                ".#.",
-                "#X.",
-                ".#.",
-            ],
-        ]),
-
-        "Z": make_offsets([
-            [
-                "##.",
-                ".X#",
-                "...",
-            ],
-            [
-                "..#",
-                ".X#",
-                ".#.",
-            ],
-            [
-                "...",
-                "#X.",
-                ".##",
-            ],
-            [
-                ".#.",
-                "#X.",
-                "#..",
-            ],
-        ]),
-    }
-
-    // kick_map determines which offsets are tested when a rotation fails.
-    // kick_map maps the current rotation_index and the desired direction to a sequence of kick values.
-    // Refer: https://tetris.wiki/Super_Rotation_System
-    const kick_map = {
-        "test": {
-            0: {
-                "left": [{ i: 0, j: 0 }, { i: 1, j: 0 }],
-                "right": [{ i: 0, j: 0 }, { i: -1, j: 0 }]
-            },
-            1: {
-                "left": [{ i: 0, j: 0 }, { i: 0, j: -1 }],
-                "right": [{ i: 0, j: 0 }, { i: 0, j: 1 }]
-            },
-            2: {
-                "left": [{ i: 0, j: 0 }, { i: -1, j: 0 }],
-                "right": [{ i: 0, j: 0 }, { i: 1, j: 0 }]
-            },
-            3: {
-                "left": [{ i: 0, j: 0 }, { i: 0, j: 1 }],
-                "right": [{ i: 0, j: 0 }, { i: 0, j: -1 }]
-            }
-        },
-        "I": {
-            0: {
-                "left": [{ i: 0, j: 0 }, { i: 0, j: -1 }, { i: 0, j: 2 }, { i: -2, j: -1 }, { i: 1, j: 2 }],
-                "right": [{ i: 0, j: 0 }, { i: 0, j: -2 }, { i: 0, j: 1 }, { i: 1, j: -2 }, { i: -2, j: 1 }]
-            },
-            1: {
-                "left": [{ i: 0, j: 0 }, { i: 0, j: 2 }, { i: 0, j: -1 }, { i: -1, j: 2 }, { i: 2, j: -1 }],
-                "right": [{ i: 0, j: 0 }, { i: 0, j: -1 }, { i: 0, j: 2 }, { i: -2, j: -1 }, { i: 1, j: 2 }]
-            },
-            2: {
-                "left": [{ i: 0, j: 0 }, { i: 0, j: 1 }, { i: 0, j: -2 }, { i: 2, j: 1 }, { i: -1, j: -2 }],
-                "right": [{ i: 0, j: 0 }, { i: 0, j: 2 }, { i: 0, j: -1 }, { i: -1, j: 2 }, { i: 2, j: -1 }]
-            },
-            3: {
-                "left": [{ i: 0, j: 0 }, { i: 0, j: -2 }, { i: 0, j: 1 }, { i: 1, j: -2 }, { i: -2, j: 1 }],
-                "right": [{ i: 0, j: 0 }, { i: 0, j: 1 }, { i: 0, j: -2 }, { i: 2, j: 1 }, { i: -1, j: -2 }]
-            }
-        },
-        "J": {
-            0: {
-                "left": [{ i: 0, j: 0 }, { i: 0, j: 1 }, { i: -1, j: 1 }, { i: 2, j: 0 }, { i: 2, j: 1 }],
-                "right": [{ i: 0, j: 0 }, { i: 0, j: -1 }, { i: -1, j: -1 }, { i: 2, j: 0 }, { i: 2, j: -1 }]
-            },
-            1: {
-                "left": [{ i: 0, j: 0 }, { i: 0, j: 1 }, { i: 1, j: 1 }, { i: -2, j: 0 }, { i: -2, j: 1 }],
-                "right": [{ i: 0, j: 0 }, { i: 0, j: 1 }, { i: 1, j: 1 }, { i: -2, j: 0 }, { i: -2, j: 1 }]
-            },
-            2: {
-                "left": [{ i: 0, j: 0 }, { i: 0, j: -1 }, { i: -1, j: -1 }, { i: 2, j: 0 }, { i: 2, j: -1 }],
-                "right": [{ i: 0, j: 0 }, { i: 0, j: 1 }, { i: -1, j: 1 }, { i: 2, j: 0 }, { i: 2, j: 1 }]
-            },
-            3: {
-                "left": [{ i: 0, j: 0 }, { i: 0, j: -1 }, { i: 1, j: -1 }, { i: -2, j: 0 }, { i: -2, j: -1 }],
-                "right": [{ i: 0, j: 0 }, { i: 0, j: -1 }, { i: 1, j: -1 }, { i: -2, j: 0 }, { i: -2, j: -1 }]
-            }
-        },
-        "O": {
-            0: {
-                "left": [{ i: 0, j: 0 }],
-                "right": [{ i: 0, j: 0 }],
-            },
-            1: {
-                "left": [{ i: 0, j: 0 }],
-                "right": [{ i: 0, j: 0 }],
-            },
-            2: {
-                "left": [{ i: 0, j: 0 }],
-                "right": [{ i: 0, j: 0 }],
-            },
-            3: {
-                "left": [{ i: 0, j: 0 }],
-                "right": [{ i: 0, j: 0 }],
-            }
-        },
-    };
-
-    // JLSTZ all share the same kick values.
-    kick_map["L"] = kick_map["J"];
-    kick_map["S"] = kick_map["J"];
-    kick_map["T"] = kick_map["J"];
-    kick_map["Z"] = kick_map["J"];
 
     // get_coordinates returns the coordinates of the tetrimino that are currently filled.
     obj.get_coordinates = function () {
@@ -543,7 +543,7 @@ function game_make(opts) {
     let spawn_shuffle = [];
     let ghost_piece = null;
 
-    obj.reset = function() {
+    obj.reset = function () {
         tetrimino = null;
         grid = grid_make(opts.grid || {});
         gravity_counter = 0;
