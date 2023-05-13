@@ -74,6 +74,8 @@ function grid_make(opts) {
 }
 
 // make_offsets is a helper to construct a list of rotation offsets.
+// pictures is an array of string array pictures.
+// A picture uses O for an exclusive origin, X for an inclusive origin, and # for a filled cell.
 function make_offsets(pictures) {
     const offsets = [];
     pictures.forEach((picture) => {
