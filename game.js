@@ -405,8 +405,8 @@ function tetrimino_make(opts) {
     obj.get_lowest_i = function () {
         const coords = obj.get_coordinates();
         let max = coords[0].i;
-        for (let i = 1; i < coords.length; i++) {
-            const pair = coords[i];
+        for (let idx = 1; i < coords.length; idx++) {
+            const pair = coords[idx];
             if (pair.i > max) {
                 max = pair.i;
             }
@@ -418,8 +418,8 @@ function tetrimino_make(opts) {
         const coords = obj.get_coordinates();
         let min = coords[0].i;
         let max = coords[0].i;
-        for (let i = 1; i < coords.length; i++) {
-            const pair = coords[i];
+        for (let idx = 1; idx < coords.length; idx++) {
+            const pair = coords[idx];
             if (pair.i < min) {
                 min = pair.i;
             }
@@ -435,8 +435,8 @@ function tetrimino_make(opts) {
         const coords = obj.get_coordinates();
         let min = coords[0].j;
         let max = coords[0].j;
-        for (let i = 1; i < coords.length; i++) {
-            const pair = coords[i];
+        for (let idx = 1; idx < coords.length; idx++) {
+            const pair = coords[idx];
             if (pair.j < min) {
                 min = pair.j;
             }
@@ -688,8 +688,8 @@ function game_make(opts) {
             t = tetrimino;
         }
         const coords = t.get_coordinates();
-        for (let i = 0; i < coords.length; i++) {
-            const pair = coords[i];
+        for (let idx = 0; idx < coords.length; idx++) {
+            const pair = coords[idx];
             if (pair.i + 1 == grid.nrows()) {
                 return true;
             }
@@ -722,10 +722,10 @@ function game_make(opts) {
         function can_rotate(kick) {
             const rotation = rotations[target_index];
             let all_empty = true;
-            for (let i = 0; i < rotation.length; i++) {
+            for (let idx = 0; idx < rotation.length; idx++) {
                 const pair = {
-                    i: t.i + kick.i + rotation[i].i,
-                    j: t.j + kick.j + rotation[i].j,
+                    i: t.i + kick.i + rotation[idx].i,
+                    j: t.j + kick.j + rotation[idx].j,
                 };
                 if (!grid.has(pair.i, pair.j)) {
                     all_empty = false;
@@ -742,8 +742,8 @@ function game_make(opts) {
         // Try to apply each kick in sequence until rotation succeeds.
         let kick_to_apply = null;
         const kicks = t.get_kicks(dir);
-        for (let i = 0; i < kicks.length; i++) {
-            const kick = kicks[i];
+        for (let idx = 0; idx < kicks.length; idx++) {
+            const kick = kicks[idx];
             if (can_rotate(kick)) {
                 kick_to_apply = kick;
                 break;
@@ -780,8 +780,8 @@ function game_make(opts) {
         }
 
         const coords = t.get_coordinates();
-        for (let i = 0; i < coords.length; i++) {
-            const pair = coords[i];
+        for (let idx = 0; idx < coords.length; idx++) {
+            const pair = coords[idx];
             if (!grid.has(pair.i, pair.j + j)) {
                 return false;
             }
@@ -883,8 +883,8 @@ function game_make(opts) {
         });
 
         const coords = t.get_coordinates();
-        for (let i = 0; i < coords.length; i++) {
-            const pair = coords[i];
+        for (let idx = 0; idx < coords.length; idx++) {
+            const pair = coords[idx];
             if (grid.get(pair.i, pair.j).filled) {
                 // The player tops out when a piece is spawned overlapping at least one block
                 has_lost = true;
@@ -1095,8 +1095,8 @@ function game_make(opts) {
         if (t) {
             // The player tops out when a block is pushed above the 20-row buffer zone.
             const coords = t.get_coordinates();
-            for (let i = 0; i < coords.length; i++) {
-                const pair = coords[i];
+            for (let idx = 0; idx < coords.length; idx++) {
+                const pair = coords[idx];
                 if (!grid.has(pair.i, pair.j)) {
                     has_lost = true;
                     // Remove tetrimino.
@@ -1189,8 +1189,8 @@ function game_make(opts) {
                 let is_visible = false;
                 // Fill cells with tetrimino.
                 const coords = t.get_coordinates();
-                for (let i = 0; i < coords.length; i++) {
-                    const pair = coords[i];
+                for (let idx = 0; idx < coords.length; idx++) {
+                    const pair = coords[idx];
                     const cell = grid.get(pair.i, pair.j);
                     cell.filled = true;
                     if (grid.has_visible(pair.i, pair.j)) {
