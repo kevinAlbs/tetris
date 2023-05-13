@@ -1551,6 +1551,10 @@ function game_make(opts) {
         paused = !paused;
     };
 
+    obj.pause = function () {
+        paused = true;
+    }
+
     obj.loop = function (opts) {
         const curr_ms = Date.now();
         if (prev_ms === null) {
@@ -1562,9 +1566,16 @@ function game_make(opts) {
         if (paused) {
             prev_ms = curr_ms;
         }
-        const delta_ms = curr_ms - prev_ms;
+        let delta_ms = curr_ms - prev_ms;
         prev_ms = curr_ms;
         tick_counter_ms += delta_ms;
+
+        if (delta_ms > kMSPerFrame * 10) {
+            // Something may have gone wrong.
+            // Switching windows is expected to pause.
+            console.log("Detected large time delta: %d Consider submit a bug report.", delta_ms);
+            delta_ms = kMSPerFrame * 10;
+        }
 
         while (tick_counter_ms >= kMSPerFrame) {
             key_states_apply();
@@ -1674,6 +1685,7 @@ function game_make(opts) {
         // Clear key state on window blur.
         window.addEventListener("blur", function () {
             key_states_reset();
+            obj.pause();
         });
     }
     return obj;
