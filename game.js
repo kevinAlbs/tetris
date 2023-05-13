@@ -947,6 +947,10 @@ function game_make(opts) {
         events.hold = true;
     }
     obj.tick_frame = function () {
+        if (obj.get_has_lost()) {
+            return;
+        }
+
         try_spawn();
 
         score_occurred = false;
