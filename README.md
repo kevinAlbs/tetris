@@ -1,3 +1,7 @@
+Common notation:
+- i is a row index. 0 is the top row.
+- j is a column index. 0 is the left column
+
 # Refactors to consider
 - Rename variables tracking recent state transitions to `did_*`
     - Rename `fill_occurred` to `did_lock`
