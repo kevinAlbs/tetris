@@ -676,6 +676,9 @@ function game_make(opts) {
             30: 160,
             31: 150
         }
+        if (level >= 32) {
+            return 150;
+        }
         console.assert(level in lock_delay_map);
         return lock_delay_map[level];
     }
