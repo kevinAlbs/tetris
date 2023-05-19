@@ -1291,11 +1291,13 @@ function game_make(opts) {
                     for (let ip = i; ip >= 0; ip--) {
                         for (let jp = 0; jp < grid.ncols(); jp++) {
                             const to = grid.get(ip, jp);
-                            if (ip == 0) {
-                                to.filed = false;
-                            } else {
+                            if (grid.has(ip - 1, jp)) {
+                                // Copy fill from line above.
                                 const from = grid.get(ip - 1, jp);
                                 to.filled = from.filled;
+                            } else {
+                                // No line above, remove fill.
+                                to.filled = false;
                             }
                         }
                     }

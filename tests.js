@@ -3,6 +3,15 @@ function assert_rendered(game, expected, opts) {
     expected = expected.join("\n");
     console.assert(got == expected, "expected grid:\n%s\ngot grid:\n%s\n", expected, got);
 }
+function apply_fill(grid, picture) {
+    console.assert(grid.nrows() == picture.length);
+    for (let i = 0; i < grid.nrows(); i++) {
+        console.assert(grid.ncols() == picture[i].length);
+        for (let j = 0; j < grid.ncols(); j++) {
+            grid.get(i, j).filled = (picture[i][j] == "F");
+        }
+    }
+}
 function test_add_tetrimino() {
     const game = game_make({ grid: { use_test_grid: true } });
     game.add_tetrimino(tetrimino_make());
@@ -667,6 +676,44 @@ function test_line_clear() {
     // Test split clear (TODO: need more pieces).
     {
 
+    }
+
+    // Test line clear on top line.
+    {
+        const game = game_make({ grid: { use_test_grid: true }, fixed_gravity: 1 });
+        const grid = game.get_grid();
+        apply_fill(grid, [
+            "..FFF",
+            ".FFFF",
+            ".FFFF",
+            ".FFFF",
+            ".FFFF",
+            ".FFFF"
+        ]);
+        game.add_tetrimino(tetrimino_make({ i: 0, j: 0, rotation_index: 0 }));
+        game.tick_frame();
+        assert_rendered(game,
+            [
+                "##FFF",
+                ".FFFF",
+                ".FFFF",
+                ".FFFF",
+                ".FFFF",
+                ".FFFF"
+            ]);
+        // Tick 30 frames to lock.
+        for (let i = 0; i < 30; i++) {
+            game.tick_frame();
+        }
+        assert_rendered(game,
+            [
+                ".....",
+                ".FFFF",
+                ".FFFF",
+                ".FFFF",
+                ".FFFF",
+                ".FFFF"
+            ]);
     }
 }
 
@@ -1360,15 +1407,6 @@ function test_hold() {
 }
 
 function test_scoring() {
-    function apply_fill(grid, picture) {
-        console.assert(grid.nrows() == picture.length);
-        for (let i = 0; i < grid.nrows(); i++) {
-            console.assert(grid.ncols() == picture[i].length);
-            for (let j = 0; j < grid.ncols(); j++) {
-                grid.get(i, j).filled = (picture[i][j] == "F");
-            }
-        }
-    }
     function await_grid(game, picture) {
         const kMaxTicks = 100;
         let got = null;;
