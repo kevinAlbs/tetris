@@ -1545,6 +1545,12 @@ function game_make(opts) {
         // TODO: can I return a read-only view of an object?
         return grid;
     }
+    obj.get_tetrimino = function () {
+        return tetrimino;
+    }
+    obj.get_ghost_piece = function () {
+        return ghost_piece;
+    }
 
     let tick_counter_ms = 0;
     let prev_ms = null;
@@ -1608,6 +1614,9 @@ function game_make(opts) {
                 flash_score_message = "Game over. Press (R) to reset.";
             }
             opts.render_text_element.innerText = "Level: " + obj.get_level() + "\n" + "Score: " + obj.get_score_total() + "\n" + flash_score_message + "\n" + text;
+        }
+        if (opts && opts.render_callback) {
+            opts.render_callback();
         }
         window.requestAnimationFrame(function () {
             if (opts && opts.loop_once) {
