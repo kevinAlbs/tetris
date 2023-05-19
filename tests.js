@@ -1339,6 +1339,24 @@ function test_hold() {
             );
         }
     }
+
+    // Hold does nothing if no tetrimino is active.
+    {
+
+        const game = game_make({ grid: { use_test_grid: true }, fixed_gravity: 1 });
+        game.hold();
+        game.tick_frame();
+        assert_rendered(game,
+            [
+                ".....",
+                ".....",
+                ".....",
+                ".....",
+                ".....",
+                "....."],
+        );
+
+    }
 }
 
 function test_scoring() {

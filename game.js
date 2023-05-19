@@ -1081,7 +1081,7 @@ function game_make(opts) {
         }
 
         if (events.hold) {
-            if (!hold_lock) {
+            if (t && !hold_lock) {
                 hold_lock = true;
                 const prev_hold_tetrimino_type = hold_tetrimino_type;
                 hold_tetrimino_type = tetrimino.get_type();
