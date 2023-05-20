@@ -1571,6 +1571,10 @@ function game_make(opts) {
         paused = true;
     }
 
+    obj.get_paused = function () {
+        return paused;
+    }
+
     obj.loop = function (opts) {
         const curr_ms = Date.now();
         if (prev_ms === null) {
@@ -1621,7 +1625,7 @@ function game_make(opts) {
             opts.render_text_element.innerText = "Level: " + obj.get_level() + "\n" + "Score: " + obj.get_score_total() + "\n" + flash_score_message + "\n" + text;
         }
         if (opts && opts.render_callback) {
-            opts.render_callback();
+            opts.render_callback(delta_ms);
         }
         window.requestAnimationFrame(function () {
             if (opts && opts.loop_once) {

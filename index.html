@@ -32,6 +32,8 @@
         const kCanvasWidth = cnv.width;
         const kCanvasHeight = cnv.height;
         const kCellWidth = 20;
+        const kGridWidth = kCellWidth * 10;
+        const kGridHeight = kCellWidth * 20;
         const typeToFillStyle = {
             "test": "#FFF",
             "Z": "#ff0400",
@@ -54,7 +56,10 @@
             "T": "#b200ff"
         };
 
-        function do_render(game) {
+        let flash_score_message_counter_ms = 0;
+        let flash_score_message = "";
+        let flash_score_value = 0;
+        function do_render(game, delta_ms) {
             const grid = game.get_grid();
             ctx.clearRect(0, 0, kCanvasWidth, kCanvasHeight);
             ctx.fillStyle = "#222"
@@ -73,15 +78,6 @@
                     }
                 }
             }
-            const tetrimino = game.get_tetrimino();
-            if (tetrimino) {
-                const coords = tetrimino.get_coordinates();
-                for (let idx = 0; idx < coords.length; idx++) {
-                    const pair = coords[idx];
-                    ctx.fillStyle = typeToFillStyle[tetrimino.type];
-                    ctx.fillRect(offset.x + pair.j * kCellWidth, offset.y + pair.i * kCellWidth, kCellWidth, kCellWidth);
-                }
-            }
 
             const ghost_piece = game.get_ghost_piece();
             if (ghost_piece) {
@@ -93,18 +89,91 @@
                 }
             }
 
+            const tetrimino = game.get_tetrimino();
+            if (tetrimino) {
+                const coords = tetrimino.get_coordinates();
+                for (let idx = 0; idx < coords.length; idx++) {
+                    const pair = coords[idx];
+                    ctx.fillStyle = typeToFillStyle[tetrimino.type];
+                    ctx.fillRect(offset.x + pair.j * kCellWidth, offset.y + pair.i * kCellWidth, kCellWidth, kCellWidth);
+                }
+            }
+
             // Render grid lines.
             for (let j = 0; j < grid.ncols(); j++) {
                 let startX = offset.x + (j + 1) * kCellWidth - 1;
                 ctx.fillStyle = "#333"
-                ctx.fillRect(startX, offset.y, 2, kCanvasHeight);
+                ctx.fillRect(startX, offset.y, 2, kGridHeight);
             }
 
             for (let i = 0; i < grid.nrows(); i++) {
                 let startY = offset.y + (i + 1) * kCellWidth - 1;
                 ctx.fillStyle = "#333"
-                ctx.fillRect(offset.x, startY, kCanvasWidth, 2);
+                ctx.fillRect(offset.x, startY, kGridWidth, 2);
             }
+
+            if (game.get_has_lost()) {
+                ctx.fillStyle = "#FFF";
+                ctx.font = "20px 'Courier New'";
+                ctx.textAlign = "center";
+                ctx.strokeStyle = "#222";
+                ctx.lineWidth = 3;
+                ctx.strokeText("Game Over", offset.x + kGridWidth / 2, offset.y + 100, kGridWidth);
+                ctx.fillText("Game Over", offset.x + kGridWidth / 2, offset.y + 100, kGridWidth);
+                ctx.font = "14px 'Courier New'";
+                ctx.strokeStyle = "#222";
+                ctx.lineWidth = 3;
+                ctx.strokeText("Press R to restart", offset.x + kGridWidth / 2, offset.y + 120, kGridWidth);
+                ctx.fillText("Press R to restart", offset.x + kGridWidth / 2, offset.y + 120, kGridWidth);
+                return;
+            }
+
+            if (game.get_paused()) {
+                ctx.fillStyle = "#FFF";
+                ctx.font = "20px 'Courier New'";
+                ctx.textAlign = "center";
+                ctx.strokeStyle = "#222";
+                ctx.lineWidth = 3;
+                ctx.strokeText("Paused", offset.x + kGridWidth / 2, offset.y + 100, kGridWidth);
+                ctx.fillText("Paused", offset.x + kGridWidth / 2, offset.y + 100, kGridWidth);
+                ctx.font = "14px 'Courier New'";
+                ctx.strokeStyle = "#222";
+                ctx.lineWidth = 3;
+                ctx.strokeText("Press P to unpause", offset.x + kGridWidth / 2, offset.y + 120, kGridWidth);
+                ctx.fillText("Press P to unpause", offset.x + kGridWidth / 2, offset.y + 120, kGridWidth);
+                return;
+            }
+
+            if (game.get_score_occurred()) {
+                flash_score_message_counter_ms = 1000;
+            }
+            if (flash_score_message_counter_ms > 0) {
+                if (game.get_score_value() > 0) {
+                    flash_score_message = game.get_score_message();
+                    flash_score_value = "+" + game.get_score_value();
+                }
+                flash_score_message_counter_ms -= delta_ms;
+            } else {
+                flash_score_message = "";
+            }
+
+            if (flash_score_message != "") {
+                ctx.fillStyle = "#FFF";
+                ctx.font = "20px 'Courier New'";
+                ctx.textAlign = "center";
+                ctx.strokeStyle = "#222";
+                ctx.lineWidth = 3;
+                ctx.strokeText(flash_score_message, offset.x + kGridWidth / 2, offset.y + 100, kGridWidth);
+                ctx.fillText(flash_score_message, offset.x + kGridWidth / 2, offset.y + 100, kGridWidth);
+                ctx.font = "14px 'Courier New'";
+                ctx.strokeStyle = "#222";
+                ctx.lineWidth = 3;
+                ctx.strokeText(flash_score_value, offset.x + kGridWidth / 2, offset.y + 120, kGridWidth);
+                ctx.fillText(flash_score_value, offset.x + kGridWidth / 2, offset.y + 120, kGridWidth);
+                return;
+            }
+
+            // Render flash text.
         }
 
         let copy_debug_info = null;
@@ -112,7 +181,7 @@
             const game = game_make({ grid: { use_test_grid: false }, enable_spawn: true, show_ghost_piece: true });
             game.register_event_listeners();
             game.loop({
-                render_callback: function () { do_render(game); },
+                render_callback: function (delta_ms) { do_render(game, delta_ms); },
             });
             copy_debug_info = function () {
                 console.log();
