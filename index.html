@@ -19,7 +19,7 @@
 </head>
 
 <body>
-    <canvas id="render_canvas" width="200" height="400"></canvas>
+    <canvas id="render_canvas" width="304" height="408"></canvas>
     <div style="font-family: 'Courier New'" id="render_text"></div>
     <p style="font-family: 'Courier New'"><a href="https://github.com/kevinAlbs/tetris">See Source</a></p>
     <script src="game.js"></script>
@@ -45,15 +45,15 @@
             "T": "#b200ff"
         };
 
-        const typeToOutlineStyle = {
-            "test": "#FFF",
-            "Z": "#ff0400",
-            "L": "#ff6a00",
-            "O": "#ffd800",
-            "S": "#03ff22",
-            "I": "#04cbff",
-            "J": "#0026ff",
-            "T": "#b200ff"
+        const typeToStrokeStyle = {
+            "test": "#333",
+            "Z": "#333",
+            "L": "#333",
+            "O": "#333",
+            "S": "#333",
+            "I": "#333",
+            "J": "#333",
+            "T": "#333"
         };
 
         let flash_score_message_counter_ms = 0;
@@ -64,9 +64,29 @@
             ctx.clearRect(0, 0, kCanvasWidth, kCanvasHeight);
             ctx.fillStyle = "#222"
             ctx.fillRect(0, 0, kCanvasWidth, kCanvasHeight);
-            const offset = {
-                x: 0,
-                y: 0
+            const gridOffset = {
+                x: 100,
+                y: 4
+            }
+
+            // Render border around grid.
+            {
+                ctx.strokeStyle = "#EEE"
+                ctx.lineWidth = 4;
+                ctx.strokeRect(gridOffset.x - 2, gridOffset.y - 2, kGridWidth + 4, kGridHeight + 4);
+            }
+
+            // Render grid lines.
+            for (let j = 0; j <= grid.ncols(); j++) {
+                let startX = gridOffset.x + j * kCellWidth - 1;
+                ctx.fillStyle = "#333"
+                ctx.fillRect(startX, gridOffset.y, 2, kGridHeight);
+            }
+
+            for (let i = 0; i <= grid.nrows(); i++) {
+                let startY = gridOffset.y + i * kCellWidth - 1;
+                ctx.fillStyle = "#333"
+                ctx.fillRect(gridOffset.x, startY, kGridWidth, 2);
             }
 
             for (let i = 0; i < grid.nrows(); i++) {
@@ -74,7 +94,10 @@
                     const cell = grid.get(i, j);
                     if (cell.filled) {
                         ctx.fillStyle = typeToFillStyle[cell.fillType];
-                        ctx.fillRect(offset.x + j * kCellWidth, offset.y + i * kCellWidth, kCellWidth, kCellWidth);
+                        ctx.fillRect(gridOffset.x + j * kCellWidth, gridOffset.y + i * kCellWidth, kCellWidth, kCellWidth);
+                        ctx.lineWidth = 2;
+                        ctx.strokeStyle = typeToStrokeStyle[cell.fillType];
+                        ctx.strokeRect(1 + gridOffset.x + j * kCellWidth, 1 + gridOffset.y + i * kCellWidth, -1 + kCellWidth, -1 + kCellWidth);
                     }
                 }
             }
@@ -85,7 +108,10 @@
                 for (let idx = 0; idx < coords.length; idx++) {
                     const pair = coords[idx];
                     ctx.fillStyle = "#555";
-                    ctx.fillRect(offset.x + pair.j * kCellWidth, offset.y + pair.i * kCellWidth, kCellWidth, kCellWidth);
+                    ctx.fillRect(gridOffset.x + pair.j * kCellWidth, gridOffset.y + pair.i * kCellWidth, kCellWidth, kCellWidth);
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = "#333";
+                    ctx.strokeRect(1 + gridOffset.x + pair.j * kCellWidth, 1 + gridOffset.y + pair.i * kCellWidth, -1 + kCellWidth, -1 + kCellWidth);
                 }
             }
 
@@ -95,21 +121,29 @@
                 for (let idx = 0; idx < coords.length; idx++) {
                     const pair = coords[idx];
                     ctx.fillStyle = typeToFillStyle[tetrimino.type];
-                    ctx.fillRect(offset.x + pair.j * kCellWidth, offset.y + pair.i * kCellWidth, kCellWidth, kCellWidth);
+                    ctx.fillRect(gridOffset.x + pair.j * kCellWidth, gridOffset.y + pair.i * kCellWidth, kCellWidth, kCellWidth);
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = typeToStrokeStyle[tetrimino.type];
+                    ctx.strokeRect(1 + gridOffset.x + pair.j * kCellWidth, 1 + gridOffset.y + pair.i * kCellWidth, -1 + kCellWidth, -1 + kCellWidth);
                 }
             }
 
-            // Render grid lines.
-            for (let j = 0; j < grid.ncols(); j++) {
-                let startX = offset.x + (j + 1) * kCellWidth - 1;
-                ctx.fillStyle = "#333"
-                ctx.fillRect(startX, offset.y, 2, kGridHeight);
-            }
-
-            for (let i = 0; i < grid.nrows(); i++) {
-                let startY = offset.y + (i + 1) * kCellWidth - 1;
-                ctx.fillStyle = "#333"
-                ctx.fillRect(offset.x, startY, kGridWidth, 2);
+            // Render hold piece.
+            const holdOffset = {
+                x: 10,
+                y: 10
+            };
+            if (game.get_hold_tetrimino_type() !== null) {
+                const hold_tetrimino = tetrimino_make({ type: game.get_hold_tetrimino_type() });
+                const coords = hold_tetrimino.get_coordinates();
+                for (let idx = 0; idx < coords.length; idx++) {
+                    const pair = coords[idx];
+                    ctx.fillStyle = typeToFillStyle[hold_tetrimino.type];
+                    ctx.fillRect(holdOffset.x + pair.j * kCellWidth, holdOffset.y + pair.i * kCellWidth, kCellWidth, kCellWidth);
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = typeToStrokeStyle[hold_tetrimino.type];
+                    ctx.strokeRect(1 + holdOffset.x + pair.j * kCellWidth, 1 + holdOffset.y + pair.i * kCellWidth, -1 + kCellWidth, -1 + kCellWidth);
+                }
             }
 
             if (game.get_has_lost()) {
@@ -118,13 +152,13 @@
                 ctx.textAlign = "center";
                 ctx.strokeStyle = "#222";
                 ctx.lineWidth = 3;
-                ctx.strokeText("Game Over", offset.x + kGridWidth / 2, offset.y + 100, kGridWidth);
-                ctx.fillText("Game Over", offset.x + kGridWidth / 2, offset.y + 100, kGridWidth);
+                ctx.strokeText("Game Over", gridOffset.x + kGridWidth / 2, gridOffset.y + 100, kGridWidth);
+                ctx.fillText("Game Over", gridOffset.x + kGridWidth / 2, gridOffset.y + 100, kGridWidth);
                 ctx.font = "14px 'Courier New'";
                 ctx.strokeStyle = "#222";
                 ctx.lineWidth = 3;
-                ctx.strokeText("Press R to restart", offset.x + kGridWidth / 2, offset.y + 120, kGridWidth);
-                ctx.fillText("Press R to restart", offset.x + kGridWidth / 2, offset.y + 120, kGridWidth);
+                ctx.strokeText("Press R to restart", gridOffset.x + kGridWidth / 2, gridOffset.y + 120, kGridWidth);
+                ctx.fillText("Press R to restart", gridOffset.x + kGridWidth / 2, gridOffset.y + 120, kGridWidth);
                 return;
             }
 
@@ -134,13 +168,13 @@
                 ctx.textAlign = "center";
                 ctx.strokeStyle = "#222";
                 ctx.lineWidth = 3;
-                ctx.strokeText("Paused", offset.x + kGridWidth / 2, offset.y + 100, kGridWidth);
-                ctx.fillText("Paused", offset.x + kGridWidth / 2, offset.y + 100, kGridWidth);
+                ctx.strokeText("Paused", gridOffset.x + kGridWidth / 2, gridOffset.y + 100, kGridWidth);
+                ctx.fillText("Paused", gridOffset.x + kGridWidth / 2, gridOffset.y + 100, kGridWidth);
                 ctx.font = "14px 'Courier New'";
                 ctx.strokeStyle = "#222";
                 ctx.lineWidth = 3;
-                ctx.strokeText("Press P to unpause", offset.x + kGridWidth / 2, offset.y + 120, kGridWidth);
-                ctx.fillText("Press P to unpause", offset.x + kGridWidth / 2, offset.y + 120, kGridWidth);
+                ctx.strokeText("Press P to unpause", gridOffset.x + kGridWidth / 2, gridOffset.y + 120, kGridWidth);
+                ctx.fillText("Press P to unpause", gridOffset.x + kGridWidth / 2, gridOffset.y + 120, kGridWidth);
                 return;
             }
 
@@ -163,17 +197,15 @@
                 ctx.textAlign = "center";
                 ctx.strokeStyle = "#222";
                 ctx.lineWidth = 3;
-                ctx.strokeText(flash_score_message, offset.x + kGridWidth / 2, offset.y + 100, kGridWidth);
-                ctx.fillText(flash_score_message, offset.x + kGridWidth / 2, offset.y + 100, kGridWidth);
+                ctx.strokeText(flash_score_message, gridOffset.x + kGridWidth / 2, gridOffset.y + 100, kGridWidth);
+                ctx.fillText(flash_score_message, gridOffset.x + kGridWidth / 2, gridOffset.y + 100, kGridWidth);
                 ctx.font = "14px 'Courier New'";
                 ctx.strokeStyle = "#222";
                 ctx.lineWidth = 3;
-                ctx.strokeText(flash_score_value, offset.x + kGridWidth / 2, offset.y + 120, kGridWidth);
-                ctx.fillText(flash_score_value, offset.x + kGridWidth / 2, offset.y + 120, kGridWidth);
+                ctx.strokeText(flash_score_value, gridOffset.x + kGridWidth / 2, gridOffset.y + 120, kGridWidth);
+                ctx.fillText(flash_score_value, gridOffset.x + kGridWidth / 2, gridOffset.y + 120, kGridWidth);
                 return;
             }
-
-            // Render flash text.
         }
 
         let copy_debug_info = null;

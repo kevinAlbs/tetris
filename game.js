@@ -951,6 +951,10 @@ function game_make(opts) {
     obj.hold = function () {
         events.hold = true;
     }
+
+    obj.get_hold_tetrimino_type = function () {
+        return hold_tetrimino_type;
+    }
     obj.tick_frame = function () {
         if (obj.get_has_lost()) {
             return;
