@@ -1,7 +1,9 @@
 "use strict"
 function cell_make() {
     return {
-        filled: false
+        filled: false,
+        // fillType is the tetrimino type that filled this cell.
+        fillType: null
     };
 }
 
@@ -1199,6 +1201,7 @@ function game_make(opts) {
                     const pair = coords[idx];
                     const cell = grid.get(pair.i, pair.j);
                     cell.filled = true;
+                    cell.fillType = t.type;
                     if (grid.has_visible(pair.i, pair.j)) {
                         is_visible = true;
                     }
@@ -1295,9 +1298,11 @@ function game_make(opts) {
                                 // Copy fill from line above.
                                 const from = grid.get(ip - 1, jp);
                                 to.filled = from.filled;
+                                to.fillType = from.fillType;
                             } else {
                                 // No line above, remove fill.
                                 to.filled = false;
+                                to.filltype = null;
                             }
                         }
                     }

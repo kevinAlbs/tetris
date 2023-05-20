@@ -32,13 +32,24 @@
         const kCanvasWidth = cnv.width;
         const kCanvasHeight = cnv.height;
         const kCellWidth = 10;
+        const typeToFillStyle = {
+            "test": "#000",
+            "Z": "#ff0400",
+            "L": "#ff6a00",
+            "O": "#ffd800",
+            "S": "#03ff22",
+            "I": "#04cbff",
+            "J": "#0026ff",
+            "T": "#b200ff"
+        }
         function do_render(game) {
             const grid = game.get_grid();
             ctx.clearRect(0, 0, kCanvasWidth, kCanvasHeight);
             for (let i = 0; i < grid.nrows(); i++) {
                 for (let j = 0; j < grid.ncols(); j++) {
-                    if (grid.get(i, j).filled) {
-                        ctx.fillStyle = "#000";
+                    const cell = grid.get(i, j);
+                    if (cell.filled) {
+                        ctx.fillStyle = typeToFillStyle[cell.fillType];
                         ctx.fillRect(j * kCellWidth, i * kCellWidth, kCellWidth, kCellWidth);
                     }
                 }
@@ -48,7 +59,7 @@
                 const coords = tetrimino.get_coordinates();
                 for (let idx = 0; idx < coords.length; idx++) {
                     const pair = coords[idx];
-                    ctx.fillStyle = "#666";
+                    ctx.fillStyle = typeToFillStyle[tetrimino.type];
                     ctx.fillRect(pair.j * kCellWidth, pair.i * kCellWidth, kCellWidth, kCellWidth);
                 }
             }
