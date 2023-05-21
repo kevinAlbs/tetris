@@ -129,6 +129,9 @@
                 const coords = ghost_piece.get_coordinates();
                 for (let idx = 0; idx < coords.length; idx++) {
                     const pair = coords[idx];
+                    if (!grid.has_visible (pair.i, pair.j)) {
+                        continue;
+                    }
                     ctx.fillStyle = "#555";
                     ctx.fillRect(gridBox.x + pair.j * kCellWidth, gridBox.y + pair.i * kCellWidth, kCellWidth, kCellWidth);
                     ctx.lineWidth = 2;
@@ -142,6 +145,9 @@
                 const coords = tetrimino.get_coordinates();
                 for (let idx = 0; idx < coords.length; idx++) {
                     const pair = coords[idx];
+                    if (!grid.has_visible (pair.i, pair.j)) {
+                        continue;
+                    }
                     ctx.fillStyle = typeToFillStyle[tetrimino.type];
                     ctx.fillRect(gridBox.x + pair.j * kCellWidth, gridBox.y + pair.i * kCellWidth, kCellWidth, kCellWidth);
                     ctx.lineWidth = 2;
