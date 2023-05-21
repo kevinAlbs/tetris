@@ -19,7 +19,7 @@
 </head>
 
 <body>
-    <canvas id="render_canvas" width="304" height="408"></canvas>
+    <canvas id="render_canvas" width="454" height="424"></canvas>
     <div style="font-family: 'Courier New'" id="render_text"></div>
     <p style="font-family: 'Courier New'"><a href="https://github.com/kevinAlbs/tetris">See Source</a></p>
     <script src="game.js"></script>
@@ -32,8 +32,6 @@
         const kCanvasWidth = cnv.width;
         const kCanvasHeight = cnv.height;
         const kCellWidth = 20;
-        const kGridWidth = kCellWidth * 10;
-        const kGridHeight = kCellWidth * 20;
         const typeToFillStyle = {
             "test": "#FFF",
             "Z": "#ff0400",
@@ -56,6 +54,28 @@
             "T": "#333"
         };
 
+        function render_tetrimino (box, offsetY, type) {
+            const tetrimino = tetrimino_make({ type: type, i: 0, j: 0 });
+            const coords = tetrimino.get_coordinates();
+            const bounds = tetrimino.get_bounds();
+            const cellWidth = bounds.maxJ - bounds.minJ + 1;
+            const pixelWidth = cellWidth * kCellWidth;
+            const paddingWidth = (box.width - pixelWidth) / 2;
+            const cellHeight = bounds.maxI - bounds.minI + 1;
+            const pixelHeight = cellHeight * kCellWidth;
+            const paddingHeight = (box.height - pixelHeight) / 2;
+            for (let idx = 0; idx < coords.length; idx++) {
+                const pair = coords[idx];
+                const startX = box.x + (pair.j - bounds.minJ) * kCellWidth + paddingWidth;
+                const startY = box.y + (pair.i - bounds.minI) * kCellWidth + paddingHeight + offsetY;
+                ctx.fillStyle = typeToFillStyle[tetrimino.type];
+                ctx.fillRect(startX, startY, kCellWidth, kCellWidth);
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = typeToStrokeStyle[tetrimino.type];
+                ctx.strokeRect(1 + startX, 1 + startY, -1 + kCellWidth, -1 + kCellWidth);
+            }
+        }
+
         let flash_score_message_counter_ms = 0;
         let flash_score_message = "";
         let flash_score_value = 0;
@@ -64,29 +84,31 @@
             ctx.clearRect(0, 0, kCanvasWidth, kCanvasHeight);
             ctx.fillStyle = "#222"
             ctx.fillRect(0, 0, kCanvasWidth, kCanvasHeight);
-            const gridOffset = {
-                x: 100,
-                y: 4
+            const gridBox = {
+                x: 126,
+                y: 12,
+                width: kCellWidth * 10,
+                height: kCellWidth * 20
             }
 
             // Render border around grid.
             {
                 ctx.strokeStyle = "#EEE"
                 ctx.lineWidth = 4;
-                ctx.strokeRect(gridOffset.x - 2, gridOffset.y - 2, kGridWidth + 4, kGridHeight + 4);
+                ctx.strokeRect(gridBox.x - 2, gridBox.y - 2, gridBox.width + 4, gridBox.height + 4);
             }
 
             // Render grid lines.
             for (let j = 0; j <= grid.ncols(); j++) {
-                let startX = gridOffset.x + j * kCellWidth - 1;
+                let startX = gridBox.x + j * kCellWidth - 1;
                 ctx.fillStyle = "#333"
-                ctx.fillRect(startX, gridOffset.y, 2, kGridHeight);
+                ctx.fillRect(startX, gridBox.y, 2, gridBox.height);
             }
 
             for (let i = 0; i <= grid.nrows(); i++) {
-                let startY = gridOffset.y + i * kCellWidth - 1;
+                let startY = gridBox.y + i * kCellWidth - 1;
                 ctx.fillStyle = "#333"
-                ctx.fillRect(gridOffset.x, startY, kGridWidth, 2);
+                ctx.fillRect(gridBox.x, startY, gridBox.width, 2);
             }
 
             for (let i = 0; i < grid.nrows(); i++) {
@@ -94,10 +116,10 @@
                     const cell = grid.get(i, j);
                     if (cell.filled) {
                         ctx.fillStyle = typeToFillStyle[cell.fillType];
-                        ctx.fillRect(gridOffset.x + j * kCellWidth, gridOffset.y + i * kCellWidth, kCellWidth, kCellWidth);
+                        ctx.fillRect(gridBox.x + j * kCellWidth, gridBox.y + i * kCellWidth, kCellWidth, kCellWidth);
                         ctx.lineWidth = 2;
                         ctx.strokeStyle = typeToStrokeStyle[cell.fillType];
-                        ctx.strokeRect(1 + gridOffset.x + j * kCellWidth, 1 + gridOffset.y + i * kCellWidth, -1 + kCellWidth, -1 + kCellWidth);
+                        ctx.strokeRect(1 + gridBox.x + j * kCellWidth, 1 + gridBox.y + i * kCellWidth, -1 + kCellWidth, -1 + kCellWidth);
                     }
                 }
             }
@@ -108,10 +130,10 @@
                 for (let idx = 0; idx < coords.length; idx++) {
                     const pair = coords[idx];
                     ctx.fillStyle = "#555";
-                    ctx.fillRect(gridOffset.x + pair.j * kCellWidth, gridOffset.y + pair.i * kCellWidth, kCellWidth, kCellWidth);
+                    ctx.fillRect(gridBox.x + pair.j * kCellWidth, gridBox.y + pair.i * kCellWidth, kCellWidth, kCellWidth);
                     ctx.lineWidth = 2;
                     ctx.strokeStyle = "#333";
-                    ctx.strokeRect(1 + gridOffset.x + pair.j * kCellWidth, 1 + gridOffset.y + pair.i * kCellWidth, -1 + kCellWidth, -1 + kCellWidth);
+                    ctx.strokeRect(1 + gridBox.x + pair.j * kCellWidth, 1 + gridBox.y + pair.i * kCellWidth, -1 + kCellWidth, -1 + kCellWidth);
                 }
             }
 
@@ -121,28 +143,95 @@
                 for (let idx = 0; idx < coords.length; idx++) {
                     const pair = coords[idx];
                     ctx.fillStyle = typeToFillStyle[tetrimino.type];
-                    ctx.fillRect(gridOffset.x + pair.j * kCellWidth, gridOffset.y + pair.i * kCellWidth, kCellWidth, kCellWidth);
+                    ctx.fillRect(gridBox.x + pair.j * kCellWidth, gridBox.y + pair.i * kCellWidth, kCellWidth, kCellWidth);
                     ctx.lineWidth = 2;
                     ctx.strokeStyle = typeToStrokeStyle[tetrimino.type];
-                    ctx.strokeRect(1 + gridOffset.x + pair.j * kCellWidth, 1 + gridOffset.y + pair.i * kCellWidth, -1 + kCellWidth, -1 + kCellWidth);
+                    ctx.strokeRect(1 + gridBox.x + pair.j * kCellWidth, 1 + gridBox.y + pair.i * kCellWidth, -1 + kCellWidth, -1 + kCellWidth);
                 }
             }
 
             // Render hold piece.
-            const holdOffset = {
+            const holdBox = {
                 x: 10,
-                y: 10
+                y: 30,
+                width: kCellWidth * 5,
+                height: kCellWidth * 3,
             };
-            if (game.get_hold_tetrimino_type() !== null) {
-                const hold_tetrimino = tetrimino_make({ type: game.get_hold_tetrimino_type() });
-                const coords = hold_tetrimino.get_coordinates();
-                for (let idx = 0; idx < coords.length; idx++) {
-                    const pair = coords[idx];
-                    ctx.fillStyle = typeToFillStyle[hold_tetrimino.type];
-                    ctx.fillRect(holdOffset.x + pair.j * kCellWidth, holdOffset.y + pair.i * kCellWidth, kCellWidth, kCellWidth);
-                    ctx.lineWidth = 2;
-                    ctx.strokeStyle = typeToStrokeStyle[hold_tetrimino.type];
-                    ctx.strokeRect(1 + holdOffset.x + pair.j * kCellWidth, 1 + holdOffset.y + pair.i * kCellWidth, -1 + kCellWidth, -1 + kCellWidth);
+            {
+                ctx.fillStyle = "#FFF";
+                ctx.font = "14px 'Courier New'";
+                ctx.textAlign = "center";
+                ctx.lineWidth = 3;
+                ctx.fillText("Hold", holdBox.x + holdBox.width / 2, holdBox.y - 10, holdBox.width);
+
+                // Render tetrimino centered in a bounding box.
+                ctx.strokeStyle = "#EEE"
+                ctx.lineWidth = 4;
+                ctx.strokeRect(holdBox.x - 2, holdBox.y - 2, holdBox.width + 4, holdBox.height + 4);
+                const hold_type = game.get_hold_tetrimino_type();
+                if (hold_type !== null) {
+                    render_tetrimino (holdBox, 0, hold_type);
+                }
+            }
+
+            // Render Score + Level + Lines.
+            {
+                let startY = 260;
+                ctx.fillStyle = "#FFF";
+                ctx.font = "20px 'Courier New'";
+                ctx.textAlign = "center";
+                ctx.lineWidth = 3;
+                ctx.fillText("Score", holdBox.x + holdBox.width / 2, startY, holdBox.width);
+                ctx.font = "14px 'Courier New'";
+                ctx.fillText(game.get_score_total(), holdBox.x + holdBox.width / 2, startY + 20, holdBox.width);
+
+                startY = 320;
+                ctx.fillStyle = "#FFF";
+                ctx.font = "20px 'Courier New'";
+                ctx.textAlign = "center";
+                ctx.lineWidth = 3;
+                ctx.fillText("Level", holdBox.x + holdBox.width / 2, startY, holdBox.width);
+                ctx.font = "14px 'Courier New'";
+                ctx.fillText(game.get_level(), holdBox.x + holdBox.width / 2, startY + 20, holdBox.width);
+
+                startY = 380;
+                ctx.fillStyle = "#FFF";
+                ctx.font = "20px 'Courier New'";
+                ctx.textAlign = "center";
+                ctx.lineWidth = 3;
+                ctx.fillText("Lines", holdBox.x + holdBox.width / 2, startY, holdBox.width);
+                ctx.font = "14px 'Courier New'";
+                ctx.fillText(game.get_total_lines_cleared(), holdBox.x + holdBox.width / 2, startY + 20, holdBox.width);
+
+            }
+
+            // Render next pieces.
+            const nextBox = {
+                x: gridBox.x + gridBox.width + 10 + 4 + 2,
+                y: holdBox.y,
+                width: holdBox.width,
+                height: holdBox.height
+            };
+            {
+                ctx.fillStyle = "#FFF";
+                ctx.font = "14px 'Courier New'";
+                ctx.textAlign = "center";
+                ctx.lineWidth = 3;
+                ctx.fillText("Next", nextBox.x + nextBox.width / 2, nextBox.y - 10, nextBox.width);
+
+                // Render tetrimino centered in a bounding box.
+                ctx.strokeStyle = "#EEE"
+                ctx.lineWidth = 4;
+                ctx.strokeRect(nextBox.x - 2, nextBox.y - 2, nextBox.width + 4, nextBox.height + 4);
+
+                const spawn_shuffle = game.get_spawn_shuffle();                
+                const next_type = (spawn_shuffle.length == 0) ? null : spawn_shuffle[0];
+                if (next_type !== null) {
+                    render_tetrimino (nextBox, 0, next_type);
+                }
+                if (spawn_shuffle.length >= 3) {
+                    render_tetrimino (nextBox, nextBox.height + 4, spawn_shuffle[1]);
+                    render_tetrimino (nextBox, 2 * (nextBox.height + 4), spawn_shuffle[2]);
                 }
             }
 
@@ -152,13 +241,13 @@
                 ctx.textAlign = "center";
                 ctx.strokeStyle = "#222";
                 ctx.lineWidth = 3;
-                ctx.strokeText("Game Over", gridOffset.x + kGridWidth / 2, gridOffset.y + 100, kGridWidth);
-                ctx.fillText("Game Over", gridOffset.x + kGridWidth / 2, gridOffset.y + 100, kGridWidth);
+                ctx.strokeText("Game Over", gridBox.x + gridBox.width / 2, gridBox.y + 100, gridBox.width);
+                ctx.fillText("Game Over", gridBox.x + gridBox.width / 2, gridBox.y + 100, gridBox.width);
                 ctx.font = "14px 'Courier New'";
                 ctx.strokeStyle = "#222";
                 ctx.lineWidth = 3;
-                ctx.strokeText("Press R to restart", gridOffset.x + kGridWidth / 2, gridOffset.y + 120, kGridWidth);
-                ctx.fillText("Press R to restart", gridOffset.x + kGridWidth / 2, gridOffset.y + 120, kGridWidth);
+                ctx.strokeText("Press R to restart", gridBox.x + gridBox.width / 2, gridBox.y + 120, gridBox.width);
+                ctx.fillText("Press R to restart", gridBox.x + gridBox.width / 2, gridBox.y + 120, gridBox.width);
                 return;
             }
 
@@ -168,13 +257,13 @@
                 ctx.textAlign = "center";
                 ctx.strokeStyle = "#222";
                 ctx.lineWidth = 3;
-                ctx.strokeText("Paused", gridOffset.x + kGridWidth / 2, gridOffset.y + 100, kGridWidth);
-                ctx.fillText("Paused", gridOffset.x + kGridWidth / 2, gridOffset.y + 100, kGridWidth);
+                ctx.strokeText("Paused", gridBox.x + gridBox.width / 2, gridBox.y + 100, gridBox.width);
+                ctx.fillText("Paused", gridBox.x + gridBox.width / 2, gridBox.y + 100, gridBox.width);
                 ctx.font = "14px 'Courier New'";
                 ctx.strokeStyle = "#222";
                 ctx.lineWidth = 3;
-                ctx.strokeText("Press P to unpause", gridOffset.x + kGridWidth / 2, gridOffset.y + 120, kGridWidth);
-                ctx.fillText("Press P to unpause", gridOffset.x + kGridWidth / 2, gridOffset.y + 120, kGridWidth);
+                ctx.strokeText("Press P to unpause", gridBox.x + gridBox.width / 2, gridBox.y + 120, gridBox.width);
+                ctx.fillText("Press P to unpause", gridBox.x + gridBox.width / 2, gridBox.y + 120, gridBox.width);
                 return;
             }
 
@@ -197,13 +286,13 @@
                 ctx.textAlign = "center";
                 ctx.strokeStyle = "#222";
                 ctx.lineWidth = 3;
-                ctx.strokeText(flash_score_message, gridOffset.x + kGridWidth / 2, gridOffset.y + 100, kGridWidth);
-                ctx.fillText(flash_score_message, gridOffset.x + kGridWidth / 2, gridOffset.y + 100, kGridWidth);
+                ctx.strokeText(flash_score_message, gridBox.x + gridBox.width / 2, gridBox.y + 100, gridBox.width);
+                ctx.fillText(flash_score_message, gridBox.x + gridBox.width / 2, gridBox.y + 100, gridBox.width);
                 ctx.font = "14px 'Courier New'";
                 ctx.strokeStyle = "#222";
                 ctx.lineWidth = 3;
-                ctx.strokeText(flash_score_value, gridOffset.x + kGridWidth / 2, gridOffset.y + 120, kGridWidth);
-                ctx.fillText(flash_score_value, gridOffset.x + kGridWidth / 2, gridOffset.y + 120, kGridWidth);
+                ctx.strokeText(flash_score_value, gridBox.x + gridBox.width / 2, gridBox.y + 120, gridBox.width);
+                ctx.fillText(flash_score_value, gridBox.x + gridBox.width / 2, gridBox.y + 120, gridBox.width);
                 return;
             }
         }

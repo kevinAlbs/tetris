@@ -416,6 +416,37 @@ function tetrimino_make(opts) {
         return max;
     }
 
+    obj.get_bounds = function () {
+        const coords = obj.get_coordinates();
+        let minJ = coords[0].j;
+        let maxJ = coords[0].j;
+        let minI = coords[0].i;
+        let maxI = coords[0].i;
+
+        for (let idx = 1; idx < coords.length; idx++) {
+            const pair = coords[idx];
+            if (pair.j < minJ) {
+                minJ = pair.j;
+            }
+            if (pair.j > maxJ) {
+                maxJ = pair.j;
+            }
+            if (pair.i < minI) {
+                minI = pair.i;
+            }
+            if (pair.i > maxI) {
+                maxI = pair.i;
+            }
+        }
+
+        return {
+            minJ: minJ,
+            maxJ: maxJ,
+            minI: minI,
+            maxI: maxI
+        };
+    }
+
     obj.get_height = function () {
         const coords = obj.get_coordinates();
         let min = coords[0].i;
@@ -615,6 +646,10 @@ function game_make(opts) {
         // Level increases every 10 lines cleared.
         return 1 + Math.floor(total_lines_cleared / 10);
     }
+
+    obj.get_total_lines_cleared = function () {
+        return total_lines_cleared;
+    };
 
     obj.is_ended = function () {
         return total_lines_cleared >= 300;
@@ -1559,6 +1594,9 @@ function game_make(opts) {
     }
     obj.get_ghost_piece = function () {
         return ghost_piece;
+    }
+    obj.get_spawn_shuffle = function () {
+        return spawn_shuffle;
     }
 
     let tick_counter_ms = 0;
