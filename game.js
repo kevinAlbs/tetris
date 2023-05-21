@@ -1685,6 +1685,7 @@ function game_make(opts) {
     const kKeyC = 67;
     const kKeyP = 80;
     const kKeyR = 82;
+    const kKeyZ = 90;
     let key_states;
     function key_states_reset() {
         key_states = {};
@@ -1697,6 +1698,7 @@ function game_make(opts) {
         key_states[kKeyC] = { down: false, pressHandled: false };
         key_states[kKeyP] = { down: false, pressHandled: false };
         key_states[kKeyR] = { down: false, pressHandled: false };
+        key_states[kKeyZ] = { down: false, pressHandled: false };
     }
     key_states_reset();
     // key_states_apply is expected to be run before each call to tick_frame.
@@ -1712,6 +1714,10 @@ function game_make(opts) {
         if (key_states[kKeyUpArrow].down && !key_states[kKeyUpArrow].pressHandled) {
             obj.rotate_right();
             key_states[kKeyUpArrow].pressHandled = true;
+        }
+        if (key_states[kKeyZ].down && !key_states[kKeyZ].pressHandled) {
+            obj.rotate_left();
+            key_states[kKeyZ].pressHandled = true;
         }
         if (key_states[kKeyC].down && !key_states[kKeyC].pressHandled) {
             obj.hold();
