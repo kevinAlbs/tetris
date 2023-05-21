@@ -12,16 +12,84 @@
         gtag('config', 'G-HDRY5R79EL');
     </script>
     <style type="text/css">
-        canvas {
-            border: 1px black solid;
+        * {
+            padding: 0px;
+            margin: 0px;
+            font-family: "Courier New"
+        }
+
+        h1 {
+            font-size: 20px;
+        }
+
+        #main {
+            width: 424px;
+            margin: 4px auto;
+        }
+
+        #settings {
+            background: #EEE;
+            padding: 1em;
+            display: none;
+        }
+
+        table {
+            width: 100%;
+        }
+
+        th {
+            text-align: left;
         }
     </style>
 </head>
 
 <body>
-    <canvas id="render_canvas" width="454" height="424"></canvas>
-    <div style="font-family: 'Courier New'" id="render_text"></div>
-    <p style="font-family: 'Courier New'"><a href="https://github.com/kevinAlbs/tetris">See Source</a></p>
+    <div id="main">
+        <canvas id="render_canvas" width="454" height="424"></canvas>
+        <p><a href="https://github.com/kevinAlbs/tetris">See Source</a></p>
+        <p><a href="#" id="toggle_settings">Open Settings</a></p>
+        <div id="settings">
+            <h1>Controls</h1>
+            <table>
+                <tr>
+                    <th>Action</th>
+                    <th>Key</th>
+                </tr>
+                <tr>
+                    <td>Move Left</td>
+                    <td>&larr;</td>
+                </tr>
+                <tr>
+                    <td>Move Right</td>
+                    <td>&rarr;</td>
+                </tr>
+                <tr>
+                    <td>Rotate Right</td>
+                    <td>&uarr;</td>
+                </tr>
+                <tr>
+                    <td>Rotate Left</td>
+                    <td>Z</td>
+                </tr>
+                <tr>
+                    <td>Soft Drop</td>
+                    <td>&darr;</td>
+                </tr>
+                <tr>
+                    <td>Hard Drop</td>
+                    <td>Space</td>
+                </tr>
+                <tr>
+                    <td>Hold</td>
+                    <td>C</td>
+                </tr>
+                <tr>
+                    <td>Pause</td>
+                    <td>P</td>
+                </tr>
+            </table>
+        </div>
+    </div>
     <script src="game.js"></script>
     <script src="tests.js"></script>
     <script>
@@ -54,7 +122,7 @@
             "T": "#571375"
         };
 
-        function render_tetrimino (box, offsetY, type) {
+        function render_tetrimino(box, offsetY, type) {
             const tetrimino = tetrimino_make({ type: type, i: 0, j: 0 });
             const coords = tetrimino.get_coordinates();
             const bounds = tetrimino.get_bounds();
@@ -129,7 +197,7 @@
                 const coords = ghost_piece.get_coordinates();
                 for (let idx = 0; idx < coords.length; idx++) {
                     const pair = coords[idx];
-                    if (!grid.has_visible (pair.i, pair.j)) {
+                    if (!grid.has_visible(pair.i, pair.j)) {
                         continue;
                     }
                     ctx.fillStyle = "#555";
@@ -145,7 +213,7 @@
                 const coords = tetrimino.get_coordinates();
                 for (let idx = 0; idx < coords.length; idx++) {
                     const pair = coords[idx];
-                    if (!grid.has_visible (pair.i, pair.j)) {
+                    if (!grid.has_visible(pair.i, pair.j)) {
                         continue;
                     }
                     ctx.fillStyle = typeToFillStyle[tetrimino.type];
@@ -176,7 +244,7 @@
                 ctx.strokeRect(holdBox.x - 2, holdBox.y - 2, holdBox.width + 4, holdBox.height + 4);
                 const hold_type = game.get_hold_tetrimino_type();
                 if (hold_type !== null) {
-                    render_tetrimino (holdBox, 0, hold_type);
+                    render_tetrimino(holdBox, 0, hold_type);
                 }
             }
 
@@ -230,14 +298,14 @@
                 ctx.lineWidth = 4;
                 ctx.strokeRect(nextBox.x - 2, nextBox.y - 2, nextBox.width + 4, nextBox.height + 4);
 
-                const spawn_shuffle = game.get_spawn_shuffle();                
+                const spawn_shuffle = game.get_spawn_shuffle();
                 const next_type = (spawn_shuffle.length == 0) ? null : spawn_shuffle[0];
                 if (next_type !== null) {
-                    render_tetrimino (nextBox, 0, next_type);
+                    render_tetrimino(nextBox, 0, next_type);
                 }
                 if (spawn_shuffle.length >= 3) {
-                    render_tetrimino (nextBox, nextBox.height + 4, spawn_shuffle[1]);
-                    render_tetrimino (nextBox, 2 * (nextBox.height + 4), spawn_shuffle[2]);
+                    render_tetrimino(nextBox, nextBox.height + 4, spawn_shuffle[1]);
+                    render_tetrimino(nextBox, 2 * (nextBox.height + 4), spawn_shuffle[2]);
                 }
             }
 
@@ -319,6 +387,25 @@
                 copy(JSON.stringify(debug_info, null, "    "));
                 console.log("Debug info is copied. Paste into a file. Upload the file to a GitHub issue to report a bug: https://github.com/kevinAlbs/tetris/issues");
             }
+
+            const el_toggle_settings = document.querySelector("#toggle_settings");
+            const el_settings = document.querySelector("#settings");
+            el_toggle_settings.addEventListener("click", function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                const text = el_toggle_settings.innerText;
+                if (text == "Open Settings") {
+                    el_settings.style.display = "block";
+                    el_toggle_settings.innerText = "Close Settings";
+                } else if (text == "Close Settings") {
+                    el_settings.style.display = "none";
+                    el_toggle_settings.innerText = "Open Settings";
+                } else {
+                    throw "Unexpected settings text: " + text;
+                }
+                game.pause();
+                return false;
+            });
         }
         console.log("To report a bug, copy debug info with: `copy_debug_info()`");
     </script>
