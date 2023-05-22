@@ -2,7 +2,7 @@
 
 <head>
     <title>Tetris</title>
-    <meta name="viewport" content="width=462, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=462, user-scalable=no">
     <link rel="icon" 
       type="image/png" 
       href="favicon.png">
@@ -44,21 +44,42 @@
         th {
             text-align: left;
         }
+
+        #mobile_controls {
+            display: none;
+            position: relative;
+        }
+        #mobile_controls .button {
+            padding: 10px;
+            background: #EEE;
+            display: inline-block;  
+        }
+
+        @media (pointer:none), (pointer:coarse) {
+            #mobile_controls {
+                display: block;
+            }
+        }
     </style>
 </head>
 
 <body>
     <div id="main">
         <canvas id="render_canvas" width="454" height="424"></canvas>
+        <div id="mobile_controls">
+            <div class="button" id="move_left">&larr;</div>
+            <div class="button" id="hard_drop">Hard &darr;</div>
+            <div class="button" id="soft_drop">Soft &darr;</div>
+            <div class="button" id="move_right">&rarr;</div>
+            <div class="button" id="rotate_left">Rotate &larr;</div>
+            <div class="button" id="rotate_right">Rotate &rarr;</div>
+            <div class="button" id="pause">Pause</div>
+            <div class="button" id="restart">Restart</div>
+        </div>
         <p><a href="https://github.com/kevinAlbs/tetris">See Source</a></p>
-        <p><a href="#" id="toggle_settings">Open Settings</a></p>
+        <p><a href="#" id="toggle_controls">Show Controls</a></p>
         <div id="settings">
-            <h1>Controls</h1>
             <table>
-                <tr>
-                    <th>Action</th>
-                    <th>Key</th>
-                </tr>
                 <tr>
                     <td>Move Left</td>
                     <td>&larr;</td>
@@ -392,18 +413,20 @@
                 console.log("Debug info is copied. Paste into a file. Upload the file to a GitHub issue to report a bug: https://github.com/kevinAlbs/tetris/issues");
             }
 
-            const el_toggle_settings = document.querySelector("#toggle_settings");
+            // Register listeners for mobile controls.
+
+            const el_toggle_controls = document.querySelector("#toggle_controls");
             const el_settings = document.querySelector("#settings");
-            el_toggle_settings.addEventListener("click", function(e) {
+            el_toggle_controls.addEventListener("click", function(e) {
                 e.stopPropagation();
                 e.preventDefault();
-                const text = el_toggle_settings.innerText;
-                if (text == "Open Settings") {
+                const text = el_toggle_controls.innerText;
+                if (text == "Show Controls") {
                     el_settings.style.display = "block";
-                    el_toggle_settings.innerText = "Close Settings";
-                } else if (text == "Close Settings") {
+                    el_toggle_controls.innerText = "Hide Controls";
+                } else if (text == "Hide Controls") {
                     el_settings.style.display = "none";
-                    el_toggle_settings.innerText = "Open Settings";
+                    el_toggle_controls.innerText = "Show Controls";
                 } else {
                     throw "Unexpected settings text: " + text;
                 }
