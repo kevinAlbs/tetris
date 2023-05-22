@@ -1348,10 +1348,6 @@ function game_make(opts) {
                     lines_cleared++;
                 }
             }
-
-            if (lines_cleared > 0) {
-                total_lines_cleared += lines_cleared;
-            }
         }
 
         // Apply scoring.
@@ -1478,6 +1474,12 @@ function game_make(opts) {
             if (in_soft_drop && applied_gravity) {
                 score_total += 1;
             }
+        }
+
+        // Update total_lines_cleared after applying score.
+        // total_lines_cleared determines the level.
+        if (lines_cleared > 0) {
+            total_lines_cleared += lines_cleared;
         }
 
         if (t) {

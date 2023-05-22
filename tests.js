@@ -1097,6 +1097,25 @@ function test_levels() {
         console.assert(game.get_level() == 21, "expected level 21, got %d", game.get_level());
         console.assert(game.get_gravity() == 20, `expected gravity 20, got ${game.get_gravity()}`);
     }
+
+    // Test score value is applied on level before lines cleared are added.
+    {
+        const game = game_make({ grid: { use_test_grid: true } });
+        const grid = game.get_grid();
+        for (let i = 0; i < 9; i++) {
+            clear_one_line(game);
+        }
+        console.assert(game.get_level() == 1, "expected level 1, got %d", game.get_level());
+        // Place another piece to break combo chain.
+        {
+            game.add_tetrimino(tetrimino_make({ i: 0, j: 0, rotation_index: 1 }));
+            game.hard_drop();
+            game.tick_frame()
+        }
+        clear_one_line(game);
+        console.assert(game.get_score_value() == 100, "expected score 100, got: %d", game.get_score_value());
+        console.assert(game.get_level() == 2, "expected level 2, got %d", game.get_level());
+    }
 }
 
 function test_spawn() {
