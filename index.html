@@ -47,22 +47,101 @@
             display: none;
             position: relative;
             user-select: none;
+            height: 300px;
         }
 
-        #mobile_controls .button {
+        .button {
             padding: 10px;
             background: #EEE;
             display: inline-block;
             user-select: none;
+            border-radius: 10px;
+            border: 4px #333 solid;
+            position: absolute;
         }
 
+        #move_left {
+            vertical-align: center;
+            width: 60px;
+            height: 60px;
+            text-align: center;
+            font-size: 50px;
+            left: 0px;
+            top: 10px;
+        }
+
+        #move_right {
+            width: 60px;
+            height: 60px;
+            vertical-align: center;
+            text-align: center;
+            font-size: 50px;
+            right: 0px;
+            top: 10px;
+        }
+
+        #rotate_left {
+            width: 60px;
+            height: 60px;
+            vertical-align: center;
+            text-align: center;
+            font-size: 50px;
+            left: 100px;
+            top: 10px;
+        }
+
+        #rotate_right {
+            width: 60px;
+            height: 60px;
+            vertical-align: center;
+            text-align: center;
+            font-size: 50px;
+            right: 100px;
+            top: 10px;
+        }
+
+        #soft_drop {
+            height: 40px;
+            padding-top: 20px;
+            text-align: center;
+            font-size: 30px;
+            left: 0px;
+            top: 110px;
+        }
+
+        #hard_drop {
+            height: 40px;
+            padding-top: 20px;
+            text-align: center;
+            font-size: 30px;
+            right: 0px;
+            top: 110px;
+        }
         
+        #pause {
+            top: 200px;
+            right: 0px;
+            font-size: 20px;
+        }
+
+        #reset {
+            top: 260px;
+            right: 0px;
+            font-size: 20px;
+        }
+
+        #hold {
+            font-size: 20px;
+            top: 110px;
+            left: 190px;
+        }
+
         #mobile_controls .button.hidden {
             display: none;
         }
 
         #mobile_controls .button.down {
-            background: #F00;
+            background: rgb(107, 107, 107);
         }
 
         @media (pointer:none),
@@ -87,11 +166,11 @@
         <canvas id="render_canvas" width="454" height="424"></canvas>
         <div id="mobile_controls">
             <div class="button" id="move_left">&larr;</div>
-            <div class="button" id="hard_drop">Hard &darr;</div>
-            <div class="button" id="soft_drop">Soft &darr;</div>
             <div class="button" id="move_right">&rarr;</div>
-            <div class="button" id="rotate_left">Rotate &larr;</div>
-            <div class="button" id="rotate_right">Rotate &rarr;</div>
+            <div class="button" id="rotate_right">R</div>
+            <div class="button" id="rotate_left">L</div>
+            <div class="button" id="soft_drop">Soft &darr;</div>
+            <div class="button" id="hard_drop">Hard &darr;</div>
             <div class="button" id="hold">Hold</div>
             <div class="button" id="pause">Pause</div>
             <div class="button hidden" id="reset">Reset</div>
