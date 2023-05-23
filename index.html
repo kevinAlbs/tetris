@@ -44,7 +44,7 @@
         }
 
         #mobile_controls {
-            /* display: none; */
+            display: none;
             position: relative;
             user-select: none;
         }
@@ -70,6 +70,14 @@
             #mobile_controls {
                 display: block;
             }
+            #section_show_mobile_controls {
+                display: none;
+            }
+        }
+        #section_show_mobile_controls label {
+            position: relative;
+            left: 5px;
+            top: -1px;
         }
     </style>
 </head>
@@ -91,6 +99,7 @@
         <p><a href="https://github.com/kevinAlbs/tetris">See Source</a></p>
         <p><a href="#" id="toggle_controls">Show Controls</a></p>
         <div id="settings">
+            <p id="section_show_mobile_controls"><input type="checkbox" id="show_mobile_controls" /><label for="show_mobile_controls">Show buttons?</label></p>
             <table>
                 <tr>
                     <td>Move Left</td>
@@ -584,6 +593,17 @@
                 }
                 game.pause();
                 return false;
+            });
+
+            const el_show_mobile_controls = document.querySelector("#show_mobile_controls");
+            el_show_mobile_controls.addEventListener("change", function() {
+                const mc = document.querySelector("#mobile_controls");
+
+                if (el_show_mobile_controls.checked) {
+                    mc.style.display = "block";
+                } else {
+                    mc.style.display = "none";
+                }
             });
         }
         console.log("To report a bug, copy debug info with: `copy_debug_info()`");
