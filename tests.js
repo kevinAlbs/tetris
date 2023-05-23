@@ -1808,6 +1808,7 @@ function test_pause() {
                     ".....",
                     "....."],
             );
+            game.stop_loop();
         }, 100);
     }
 }

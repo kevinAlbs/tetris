@@ -577,6 +577,7 @@ function game_make(opts) {
     let combo_counter = -1;
     let spawn_shuffle = [];
     let ghost_piece = null;
+    let stopped = false;
 
     obj.reset = function () {
         tetrimino = null;
@@ -604,6 +605,7 @@ function game_make(opts) {
         combo_counter = -1;
         spawn_shuffle = [];
         ghost_piece = null;
+        stopped = false;
     };
 
     let last_n_renders = [];
@@ -1619,30 +1621,43 @@ function game_make(opts) {
         return paused;
     }
 
+    obj.stop_loop = function () {
+        stopped = true;
+    }
+
     obj.loop = function (opts) {
+        if (stopped) {
+            return;
+        }
         const curr_ms = Date.now();
         if (prev_ms === null) {
             prev_ms = curr_ms;
         }
 
-        key_states_apply_for_loop();
+        inputs_apply_for_loop();
+        if (opts.inputs_apply_for_loop_callback) {
+            opts.inputs_apply_for_loop_callback ();
+        }
         // If paused, force delta to be 0 so game state does not increment.
         if (paused) {
             prev_ms = curr_ms;
         }
         let delta_ms = curr_ms - prev_ms;
         prev_ms = curr_ms;
-        tick_counter_ms += delta_ms;
-
+        
         if (delta_ms > kMSPerFrame * 10) {
             // Something may have gone wrong.
             // Switching windows is expected to pause.
             console.log("Detected large time delta: %d Consider submit a bug report.", delta_ms);
             delta_ms = kMSPerFrame * 10;
         }
+        tick_counter_ms += delta_ms;
 
         while (tick_counter_ms >= kMSPerFrame) {
-            key_states_apply();
+            inputs_apply();
+            if (opts.inputs_apply_callback) {
+                opts.inputs_apply_callback();
+            }
             obj.tick_frame();
             tick_counter_ms -= kMSPerFrame;
         }
@@ -1703,9 +1718,9 @@ function game_make(opts) {
         key_states[kKeyZ] = { down: false, pressHandled: false };
     }
     key_states_reset();
-    // key_states_apply is expected to be run before each call to tick_frame.
+    // inputs_apply is expected to be run before each call to tick_frame.
     // A press event must be handled by a tick_frame (e.g. a hard drop).
-    function key_states_apply() {
+    function inputs_apply() {
         if (key_states[kKeyDownArrow].down) obj.soft_drop();
         if (key_states[kKeySpace].down && !key_states[kKeySpace].pressHandled) {
             obj.hard_drop();
@@ -1727,8 +1742,8 @@ function game_make(opts) {
         }
     }
 
-    // key_states_apply_for_loop is expected to be run each loop iteration.
-    function key_states_apply_for_loop() {
+    // inputs_apply_for_loop is expected to be run each loop iteration.
+    function inputs_apply_for_loop() {
         if (key_states[kKeyP].down && !key_states[kKeyP].pressHandled) {
             obj.pause_toggle();
             key_states[kKeyP].pressHandled = true;

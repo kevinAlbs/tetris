@@ -3,9 +3,7 @@
 <head>
     <title>Tetris</title>
     <meta name="viewport" content="width=462, user-scalable=no">
-    <link rel="icon" 
-      type="image/png" 
-      href="favicon.png">
+    <link rel="icon" type="image/png" href="favicon.png">
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-HDRY5R79EL"></script>
     <script>
@@ -46,16 +44,29 @@
         }
 
         #mobile_controls {
-            display: none;
+            /* display: none; */
             position: relative;
+            user-select: none;
         }
+
         #mobile_controls .button {
             padding: 10px;
             background: #EEE;
-            display: inline-block;  
+            display: inline-block;
+            user-select: none;
         }
 
-        @media (pointer:none), (pointer:coarse) {
+        
+        #mobile_controls .button.hidden {
+            display: none;
+        }
+
+        #mobile_controls .button.down {
+            background: #F00;
+        }
+
+        @media (pointer:none),
+        (pointer:coarse) {
             #mobile_controls {
                 display: block;
             }
@@ -73,8 +84,9 @@
             <div class="button" id="move_right">&rarr;</div>
             <div class="button" id="rotate_left">Rotate &larr;</div>
             <div class="button" id="rotate_right">Rotate &rarr;</div>
+            <div class="button" id="hold">Hold</div>
             <div class="button" id="pause">Pause</div>
-            <div class="button" id="restart">Restart</div>
+            <div class="button hidden" id="reset">Reset</div>
         </div>
         <p><a href="https://github.com/kevinAlbs/tetris">See Source</a></p>
         <p><a href="#" id="toggle_controls">Show Controls</a></p>
@@ -146,6 +158,10 @@
             "J": "#003074",
             "T": "#571375"
         };
+
+        function is_mobile_controls_displayed () {
+            return getComputedStyle(document.querySelector("#mobile_controls")).display == "block";
+        }
 
         function render_tetrimino(box, offsetY, type) {
             const tetrimino = tetrimino_make({ type: type, i: 0, j: 0 });
@@ -345,8 +361,12 @@
                 ctx.font = "14px 'Courier New'";
                 ctx.strokeStyle = "#222";
                 ctx.lineWidth = 3;
-                ctx.strokeText("Press R to restart", gridBox.x + gridBox.width / 2, gridBox.y + 120, gridBox.width);
-                ctx.fillText("Press R to restart", gridBox.x + gridBox.width / 2, gridBox.y + 120, gridBox.width);
+                let msg = "Press R to restart";
+                if (is_mobile_controls_displayed ()) {
+                    msg = "Press Reset to continue";
+                }
+                ctx.strokeText(msg, gridBox.x + gridBox.width / 2, gridBox.y + 120, gridBox.width);
+                ctx.fillText(msg, gridBox.x + gridBox.width / 2, gridBox.y + 120, gridBox.width);
                 return;
             }
 
@@ -361,8 +381,12 @@
                 ctx.font = "14px 'Courier New'";
                 ctx.strokeStyle = "#222";
                 ctx.lineWidth = 3;
-                ctx.strokeText("Press P to unpause", gridBox.x + gridBox.width / 2, gridBox.y + 120, gridBox.width);
-                ctx.fillText("Press P to unpause", gridBox.x + gridBox.width / 2, gridBox.y + 120, gridBox.width);
+                let msg = "Press P to unpause";
+                if (is_mobile_controls_displayed ()) {
+                    msg = "Press Unpause to unpause";
+                }
+                ctx.strokeText(msg, gridBox.x + gridBox.width / 2, gridBox.y + 120, gridBox.width);
+                ctx.fillText(msg, gridBox.x + gridBox.width / 2, gridBox.y + 120, gridBox.width);
                 return;
             }
 
@@ -396,15 +420,145 @@
             }
         }
 
+        const kBtnSoftDrop = "soft_drop";
+        const kBtnMoveLeft = "move_left";
+        const kBtnMoveRight = "move_right";
+        const kBtnRotateRight = "rotate_right";
+        const kBtnHardDrop = "hard_drop";
+        const kBtnHold = "hold";
+        const kBtnPause = "pause";
+        const kBtnReset = "reset";
+        const kBtnRotateLeft = "rotate_left";
+        let btn_states = {};
+
+        function btn_states_init() {
+            btn_states[kBtnSoftDrop] = {};
+            btn_states[kBtnMoveLeft] = {};
+            btn_states[kBtnMoveRight] = {};
+            btn_states[kBtnRotateRight] = {};
+            btn_states[kBtnHardDrop] = {};
+            btn_states[kBtnHold] = {};
+            btn_states[kBtnPause] = {};
+            btn_states[kBtnReset] = {};
+            btn_states[kBtnRotateLeft] = {};
+        }
+        btn_states_init();
+
+        function btn_states_reset() {
+            Object.assign(btn_states[kBtnSoftDrop], { down: false, pressHandled: false, el: document.querySelector("#" + kBtnSoftDrop) });
+            Object.assign(btn_states[kBtnMoveLeft], { down: false, pressHandled: false, el: document.querySelector("#" + kBtnMoveLeft) });
+            Object.assign(btn_states[kBtnMoveRight], { down: false, pressHandled: false, el: document.querySelector("#" + kBtnMoveRight) });
+            Object.assign(btn_states[kBtnRotateRight], { down: false, pressHandled: false, el: document.querySelector("#" + kBtnRotateRight) });
+            Object.assign(btn_states[kBtnHardDrop], { down: false, pressHandled: false, el: document.querySelector("#" + kBtnHardDrop) });
+            Object.assign(btn_states[kBtnHold], { down: false, pressHandled: false, el: document.querySelector("#" + kBtnHold) });
+            Object.assign(btn_states[kBtnPause], { down: false, pressHandled: false, el: document.querySelector("#" + kBtnPause) });
+            Object.assign(btn_states[kBtnReset], { down: false, pressHandled: false, el: document.querySelector("#" + kBtnReset), shown: false });
+            Object.assign(btn_states[kBtnRotateLeft], { down: false, pressHandled: false, el: document.querySelector("#" + kBtnRotateLeft) });
+
+            for (id in btn_states) {
+                btn_states[id].el.classList.remove("down");
+            }
+
+            btn_states[kBtnReset].el.classList.add("hidden");
+            btn_states[kBtnPause].el.innerText = "Pause";
+        }
+
+        btn_states_reset();
+
+        function do_inputs_apply(game) {
+            if (btn_states[kBtnSoftDrop].down) game.soft_drop();
+            if (btn_states[kBtnHardDrop].down && !btn_states[kBtnHardDrop].pressHandled) {
+                game.hard_drop();
+                btn_states[kBtnHardDrop].pressHandled = true;
+            }
+            if (btn_states[kBtnMoveLeft].down) game.move_left();
+            if (btn_states[kBtnMoveRight].down) game.move_right();
+            if (btn_states[kBtnRotateRight].down && !btn_states[kBtnRotateRight].pressHandled) {
+                game.rotate_right();
+                btn_states[kBtnRotateRight].pressHandled = true;
+            }
+            if (btn_states[kBtnRotateLeft].down && !btn_states[kBtnRotateLeft].pressHandled) {
+                game.rotate_left();
+                btn_states[kBtnRotateLeft].pressHandled = true;
+            }
+            if (btn_states[kBtnHold].down && !btn_states[kBtnHold].pressHandled) {
+                game.hold();
+                btn_states[kBtnHold].pressHandled = true;
+            }
+        }
+
+        function do_inputs_apply_for_loop (game) {
+            if (btn_states[kBtnPause].down && !btn_states[kBtnPause].pressHandled) {
+                game.pause_toggle();
+                btn_states[kBtnPause].pressHandled = true;
+            }
+
+            if (btn_states[kBtnReset].down && !btn_states[kBtnReset].pressHandled) {
+                game.reset();
+            }
+
+            // Conditionally show the Reset button if game is lost.
+            if (game.get_has_lost() && !btn_states[kBtnReset].shown) {
+                btn_states[kBtnReset].el.classList.remove("hidden");
+                btn_states[kBtnReset].shown = true;
+            } else if (!game.get_has_lost() && btn_states[kBtnReset].shown) {
+                btn_states[kBtnReset].shown = false;
+                btn_states[kBtnReset].el.classList.add("hidden");
+            }
+
+            // Conditionally change Pause to Unpause.
+            if (game.get_paused() && btn_states[kBtnPause].el.innerText == "Pause") {
+                btn_states[kBtnPause].el.innerText = "Unpause";
+            } else if (!game.get_paused() && btn_states[kBtnPause].el.innerText == "Unpause") {
+                btn_states[kBtnPause].el.innerText = "Pause";
+            }
+        }
+
+        function register_event_listeners() {
+            for (id in btn_states) {
+                const btn = btn_states[id]
+                btn.el.addEventListener("pointerdown", function () {
+                    btn.el.classList.add("down");
+                    btn.down = true;
+                    btn.pressHandled = false;
+                });
+                btn.el.addEventListener("pointerover", function (e) {
+                    if (e.buttons & 1) {
+                        // Primary button is down.
+                        btn.el.classList.add("down");
+                        btn.down = true;
+                    }
+                });
+                btn.el.addEventListener("pointerleave", function () {
+                    btn.el.classList.remove("down");
+                    btn.down = false;
+                });
+                btn.el.addEventListener("pointerup", function () {
+                    btn.el.classList.remove("down");
+                    btn.down = false;
+                });
+            }
+        }
+
+        window.addEventListener("blur", function () {
+            btn_states_reset();
+        });
+
         let copy_debug_info = null;
         function main() {
-            const game = game_make({ grid: { use_test_grid: false }, enable_spawn: true, show_ghost_piece: true });
+            const game = game_make({
+                grid: { use_test_grid: false },
+                enable_spawn: true,
+                show_ghost_piece: true
+            });
+            register_event_listeners();
             game.register_event_listeners();
             game.loop({
                 render_callback: function (delta_ms) { do_render(game, delta_ms); },
+                inputs_apply_callback: function () { do_inputs_apply(game) },
+                inputs_apply_for_loop_callback: function () { do_inputs_apply_for_loop (game); }
             });
             copy_debug_info = function () {
-                console.log();
                 const debug_info = game.get_debug_info();
                 for (let i = 0; i < debug_info.last_n_renders.length; i++) {
                     debug_info.last_n_renders[i] = debug_info.last_n_renders[i].split("\n");
@@ -413,11 +567,9 @@
                 console.log("Debug info is copied. Paste into a file. Upload the file to a GitHub issue to report a bug: https://github.com/kevinAlbs/tetris/issues");
             }
 
-            // Register listeners for mobile controls.
-
             const el_toggle_controls = document.querySelector("#toggle_controls");
             const el_settings = document.querySelector("#settings");
-            el_toggle_controls.addEventListener("click", function(e) {
+            el_toggle_controls.addEventListener("click", function (e) {
                 e.stopPropagation();
                 e.preventDefault();
                 const text = el_toggle_controls.innerText;
