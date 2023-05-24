@@ -29,7 +29,8 @@
             margin: 4px auto;
         }
 
-        #settings {
+        #settings,
+        #controls {
             background: #EEE;
             padding: 1em;
             display: none;
@@ -117,7 +118,7 @@
             right: 0px;
             top: 110px;
         }
-        
+
         #pause {
             top: 200px;
             right: 0px;
@@ -141,7 +142,7 @@
         }
 
         #mobile_controls .button.down {
-            background: rgb(107, 107, 107);
+            background: #0093fc;
         }
 
         @media (pointer:none),
@@ -149,14 +150,20 @@
             #mobile_controls {
                 display: block;
             }
+
             #section_show_mobile_controls {
                 display: none;
             }
         }
+
         #section_show_mobile_controls label {
             position: relative;
             left: 5px;
             top: -1px;
+        }
+
+        #fps_display {
+            display: none;
         }
     </style>
 </head>
@@ -177,8 +184,9 @@
         </div>
         <p><a href="https://github.com/kevinAlbs/tetris">See Source</a></p>
         <p><a href="#" id="toggle_controls">Show Controls</a></p>
-        <div id="settings">
-            <p id="section_show_mobile_controls"><input type="checkbox" id="show_mobile_controls" /><label for="show_mobile_controls">Show buttons?</label></p>
+        <div id="controls">
+            <p id="section_show_mobile_controls"><input type="checkbox" id="show_mobile_controls" /><label
+                    for="show_mobile_controls">Show buttons?</label></p>
             <table>
                 <tr>
                     <td>Move Left</td>
@@ -214,6 +222,23 @@
                 </tr>
             </table>
         </div>
+        <p><a href="#" id="toggle_settings">Show Settings</a></p>
+        <div id="settings">
+            <table>
+                <tr>
+                    <td><label>Override Frames per second?</label></td>
+                    <td><input type="checkbox" id="fps_override" /></td>
+                </tr>
+                <tr id="fps_display">
+                    <td><label>Frames per second</label></td>
+                    <td><input type="number" min="1" max="60" value="60" id="fps_value" /></td>
+                </tr>
+                <!-- <tr>
+                    <td><label>Override Level?</label></td>
+                    <td><input type="checkbox" /></td>
+                </tr> -->
+            </table>
+        </div>
     </div>
     <script src="game.js"></script>
     <script src="tests.js"></script>
@@ -247,7 +272,7 @@
             "T": "#571375"
         };
 
-        function is_mobile_controls_displayed () {
+        function is_mobile_controls_displayed() {
             return getComputedStyle(document.querySelector("#mobile_controls")).display == "block";
         }
 
@@ -450,7 +475,7 @@
                 ctx.strokeStyle = "#222";
                 ctx.lineWidth = 3;
                 let msg = "Press R to restart";
-                if (is_mobile_controls_displayed ()) {
+                if (is_mobile_controls_displayed()) {
                     msg = "Press Reset to continue";
                 }
                 ctx.strokeText(msg, gridBox.x + gridBox.width / 2, gridBox.y + 120, gridBox.width);
@@ -470,7 +495,7 @@
                 ctx.strokeStyle = "#222";
                 ctx.lineWidth = 3;
                 let msg = "Press P to unpause";
-                if (is_mobile_controls_displayed ()) {
+                if (is_mobile_controls_displayed()) {
                     msg = "Press Unpause to unpause";
                 }
                 ctx.strokeText(msg, gridBox.x + gridBox.width / 2, gridBox.y + 120, gridBox.width);
@@ -575,7 +600,7 @@
             }
         }
 
-        function do_inputs_apply_for_loop (game) {
+        function do_inputs_apply_for_loop(game) {
             if (btn_states[kBtnPause].down && !btn_states[kBtnPause].pressHandled) {
                 game.pause_toggle();
                 btn_states[kBtnPause].pressHandled = true;
@@ -644,7 +669,7 @@
             game.loop({
                 render_callback: function (delta_ms) { do_render(game, delta_ms); },
                 inputs_apply_callback: function () { do_inputs_apply(game) },
-                inputs_apply_for_loop_callback: function () { do_inputs_apply_for_loop (game); }
+                inputs_apply_for_loop_callback: function () { do_inputs_apply_for_loop(game); }
             });
             copy_debug_info = function () {
                 const debug_info = game.get_debug_info();
@@ -656,17 +681,41 @@
             }
 
             const el_toggle_controls = document.querySelector("#toggle_controls");
-            const el_settings = document.querySelector("#settings");
+            const el_controls = document.querySelector("#controls");
             el_toggle_controls.addEventListener("click", function (e) {
                 e.stopPropagation();
                 e.preventDefault();
                 const text = el_toggle_controls.innerText;
                 if (text == "Show Controls") {
-                    el_settings.style.display = "block";
+                    el_controls.style.display = "block";
                     el_toggle_controls.innerText = "Hide Controls";
                 } else if (text == "Hide Controls") {
-                    el_settings.style.display = "none";
+                    el_controls.style.display = "none";
                     el_toggle_controls.innerText = "Show Controls";
+                } else {
+                    throw "Unexpected controls text: " + text;
+                }
+                game.pause();
+                return false;
+            });
+
+            const el_show_mobile_controls = document.querySelector("#show_mobile_controls");
+            el_show_mobile_controls.addEventListener("change", function () {
+                applySettingsAndControls();
+            });
+
+            const el_toggle_settings = document.querySelector("#toggle_settings");
+            const el_settings = document.querySelector("#settings");
+            el_toggle_settings.addEventListener("click", function (e) {
+                e.stopPropagation();
+                e.preventDefault();
+                const text = el_toggle_settings.innerText;
+                if (text == "Show Settings") {
+                    el_settings.style.display = "block";
+                    el_toggle_settings.innerText = "Hide Settings";
+                } else if (text == "Hide Settings") {
+                    el_settings.style.display = "none";
+                    el_toggle_settings.innerText = "Show Settings";
                 } else {
                     throw "Unexpected settings text: " + text;
                 }
@@ -674,8 +723,12 @@
                 return false;
             });
 
-            const el_show_mobile_controls = document.querySelector("#show_mobile_controls");
-            el_show_mobile_controls.addEventListener("change", function() {
+            const el_fps_override = document.querySelector("#fps_override");
+            const el_fps_value = document.querySelector("#fps_value");
+            el_fps_override.addEventListener("change", function () { applySettingsAndControls() });
+            el_fps_value.addEventListener("change", function () { applySettingsAndControls() });
+
+            function applySettingsAndControls() {
                 const mc = document.querySelector("#mobile_controls");
 
                 if (el_show_mobile_controls.checked) {
@@ -683,7 +736,18 @@
                 } else {
                     mc.style.display = "none";
                 }
-            });
+
+                const el_fps_display = document.querySelector("#fps_display");
+                if (el_fps_override.checked) {
+                    el_fps_display.style.display = "block";
+                    console.log(el_fps_value.value);
+                    game.set_frames_per_second(el_fps_value.value);
+                } else {
+                    el_fps_display.style.display = "none";
+                    game.reset_frames_per_second();
+                }
+
+            }
         }
         console.log("To report a bug, copy debug info with: `copy_debug_info()`");
     </script>

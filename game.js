@@ -539,7 +539,7 @@ function game_make(opts) {
     let tetrimino = null;
     let grid = grid_make(opts.grid || {});
     let gravity_counter = 0;
-    const kMSPerFrame = opts.kMSPerFrame || 1000 / 60;
+    let kMSPerFrame = opts.kMSPerFrame || 1000 / 60;
     let lock_timer_ms = 0;
     let locking = false;
     let lock_delay_reset_counter = 0;
@@ -655,6 +655,17 @@ function game_make(opts) {
 
     obj.is_ended = function () {
         return total_lines_cleared >= 300;
+    }
+
+    obj.set_frames_per_second = function (val) {
+        if (val < 1 || val > 60) {
+            throw "invalid value for frames_per_second. Value must be >= 1 and <= 60";
+        }
+        kMSPerFrame = 1000 / val;
+    }
+
+    obj.reset_frames_per_second = function () {
+        kMSPerFrame = 1000 / 60;
     }
 
     obj.get_gravity = function () {
@@ -1636,7 +1647,7 @@ function game_make(opts) {
 
         inputs_apply_for_loop();
         if (opts.inputs_apply_for_loop_callback) {
-            opts.inputs_apply_for_loop_callback ();
+            opts.inputs_apply_for_loop_callback();
         }
         // If paused, force delta to be 0 so game state does not increment.
         if (paused) {
@@ -1644,7 +1655,7 @@ function game_make(opts) {
         }
         let delta_ms = curr_ms - prev_ms;
         prev_ms = curr_ms;
-        
+
         if (delta_ms > kMSPerFrame * 10) {
             // Something may have gone wrong.
             // Switching windows is expected to pause.
