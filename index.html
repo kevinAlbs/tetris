@@ -276,6 +276,10 @@
             return getComputedStyle(document.querySelector("#mobile_controls")).display == "block";
         }
 
+        function can_toggle_mobile_controls() {
+            return getComputedStyle(document.querySelector("#section_show_mobile_controls")).display == "block";
+        }
+
         function render_tetrimino(box, offsetY, type) {
             const tetrimino = tetrimino_make({ type: type, i: 0, j: 0 });
             const coords = tetrimino.get_coordinates();
@@ -730,11 +734,12 @@
 
             function applySettingsAndControls() {
                 const mc = document.querySelector("#mobile_controls");
-
-                if (el_show_mobile_controls.checked) {
-                    mc.style.display = "block";
-                } else {
-                    mc.style.display = "none";
+                if (can_toggle_mobile_controls()) {
+                    if (el_show_mobile_controls.checked) {
+                        mc.style.display = "block";
+                    } else {
+                        mc.style.display = "none";
+                    }
                 }
 
                 const el_fps_display = document.querySelector("#fps_display");
