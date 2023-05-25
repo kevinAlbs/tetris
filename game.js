@@ -539,7 +539,7 @@ function game_make(opts) {
     let tetrimino = null;
     let grid = grid_make(opts.grid || {});
     let gravity_counter = 0;
-    let kMSPerFrame = opts.kMSPerFrame || 1000 / 60;
+    const kMSPerFrame = opts.kMSPerFrame || 1000 / 60;
     let lock_timer_ms = 0;
     let locking = false;
     let lock_delay_reset_counter = 0;
@@ -578,6 +578,8 @@ function game_make(opts) {
     let spawn_shuffle = [];
     let ghost_piece = null;
     let stopped = false;
+    let fixed_frames_per_second = null;
+    let fixed_level = null;
 
     obj.reset = function () {
         tetrimino = null;
@@ -645,8 +647,22 @@ function game_make(opts) {
         if (opts.fixed_level) {
             return opts.fixed_level;
         }
+        if (fixed_level) {
+            return fixed_level;
+        }
         // Level increases every 10 lines cleared.
         return 1 + Math.floor(total_lines_cleared / 10);
+    }
+
+    obj.set_fixed_level = function (val) {
+        if (val < 1 || val > 30) {
+            throw "invalid value for level. Value must be >= 1 and <= 30";
+        }
+        fixed_level = val;
+    }
+
+    obj.reset_fixed_level = function () {
+        fixed_level = null;
     }
 
     obj.get_total_lines_cleared = function () {
@@ -657,15 +673,19 @@ function game_make(opts) {
         return total_lines_cleared >= 300;
     }
 
-    obj.set_frames_per_second = function (val) {
+    obj.set_fixed_frames_per_second = function (val) {
         if (val < 1 || val > 60) {
             throw "invalid value for frames_per_second. Value must be >= 1 and <= 60";
         }
-        kMSPerFrame = 1000 / val;
+        fixed_frames_per_second = val;
     }
 
-    obj.reset_frames_per_second = function () {
-        kMSPerFrame = 1000 / 60;
+    obj.get_fixed_frames_per_second = function () {
+        return fixed_frames_per_second;
+    }
+
+    obj.reset_fixed_frames_per_second = function () {
+        fixed_frames_per_second = null;
     }
 
     obj.get_gravity = function () {
@@ -1645,6 +1665,11 @@ function game_make(opts) {
             prev_ms = curr_ms;
         }
 
+        let msBetweenTicks = kMSPerFrame;
+        if (fixed_frames_per_second) {
+            msBetweenTicks = 1000 / fixed_frames_per_second;
+        }
+
         inputs_apply_for_loop();
         if (opts.inputs_apply_for_loop_callback) {
             opts.inputs_apply_for_loop_callback();
@@ -1656,21 +1681,31 @@ function game_make(opts) {
         let delta_ms = curr_ms - prev_ms;
         prev_ms = curr_ms;
 
-        if (delta_ms > kMSPerFrame * 10) {
+        if (delta_ms > msBetweenTicks * 10) {
             // Something may have gone wrong.
             // Switching windows is expected to pause.
             console.log("Detected large time delta: %d Consider submit a bug report.", delta_ms);
-            delta_ms = kMSPerFrame * 10;
+            delta_ms = msBetweenTicks * 10;
         }
         tick_counter_ms += delta_ms;
 
-        while (tick_counter_ms >= kMSPerFrame) {
+        if (fixed_frames_per_second && opts.frames_progress_callback) {
+            let progress = 0;
+            if (tick_counter_ms >= msBetweenTicks) {
+                progress = 1;
+            } else {
+                progress = (msBetweenTicks - tick_counter_ms) / msBetweenTicks
+            }
+            opts.frames_progress_callback(progress)
+        }
+
+        while (tick_counter_ms >= msBetweenTicks) {
             inputs_apply();
             if (opts.inputs_apply_callback) {
                 opts.inputs_apply_callback();
             }
             obj.tick_frame();
-            tick_counter_ms -= kMSPerFrame;
+            tick_counter_ms -= msBetweenTicks;
         }
 
         if (opts && opts.render_text_element) {

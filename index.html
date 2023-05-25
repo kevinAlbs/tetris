@@ -162,7 +162,8 @@
             top: -1px;
         }
 
-        #fps_display {
+        #fps_display,
+        #level_display {
             display: none;
         }
     </style>
@@ -233,10 +234,14 @@
                     <td><label>Frames per second</label></td>
                     <td><input type="number" min="1" max="60" value="60" id="fps_value" /></td>
                 </tr>
-                <!-- <tr>
+                <tr>
                     <td><label>Override Level?</label></td>
-                    <td><input type="checkbox" /></td>
-                </tr> -->
+                    <td><input type="checkbox" id="level_override" /></td>
+                </tr>
+                <tr id="level_display">
+                    <td><label>Level</label></td>
+                    <td><input type="number" min="1" max="30" value="1" id="level_value" /></td>
+                </tr>
             </table>
         </div>
     </div>
@@ -305,6 +310,7 @@
         let flash_score_message_counter_ms = 0;
         let flash_score_message = "";
         let flash_score_value = 0;
+        let frame_progress = 0;
         function do_render(game, delta_ms) {
             const grid = game.get_grid();
             ctx.clearRect(0, 0, kCanvasWidth, kCanvasHeight);
@@ -535,6 +541,35 @@
                 ctx.fillText(flash_score_value, gridBox.x + gridBox.width / 2, gridBox.y + 120, gridBox.width);
                 return;
             }
+
+            // Special: if using 1 frame per second, show a clock.
+            if (game.get_fixed_frames_per_second() != null && game.get_fixed_frames_per_second() == 1) {
+                ctx.font = "14px 'Courier New'";
+                ctx.strokeStyle = "#222";
+                ctx.fillStyle = "#FFF";
+                ctx.lineWidth = 3;
+                ctx.fillText("Frame Ticker", nextBox.x + nextBox.width / 2, nextBox.y + 240, nextBox.width);
+
+                const origin = {
+                    x: nextBox.x + nextBox.width / 2,
+                    y: nextBox.y + 300
+                }
+                const radius = nextBox.width / 2;
+                ctx.strokeStyle = "#FFF";
+                if (frame_progress >= .9) {
+                    ctx.strokeStyle = "#F00"
+                }
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(origin.x, origin.y, radius, 0, Math.PI * 2);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(origin.x, origin.y);
+                const angle = frame_progress * Math.PI * 2;
+                ctx.lineTo(origin.x + Math.cos(angle) * radius, origin.y + Math.sin(angle) * radius);
+                ctx.stroke();
+            }
         }
 
         const kBtnSoftDrop = "soft_drop";
@@ -673,7 +708,8 @@
             game.loop({
                 render_callback: function (delta_ms) { do_render(game, delta_ms); },
                 inputs_apply_callback: function () { do_inputs_apply(game) },
-                inputs_apply_for_loop_callback: function () { do_inputs_apply_for_loop(game); }
+                inputs_apply_for_loop_callback: function () { do_inputs_apply_for_loop(game); },
+                frames_progress_callback: function (progress) { frame_progress = progress; console.log(progress); }
             });
             copy_debug_info = function () {
                 const debug_info = game.get_debug_info();
@@ -732,6 +768,11 @@
             el_fps_override.addEventListener("change", function () { applySettingsAndControls() });
             el_fps_value.addEventListener("change", function () { applySettingsAndControls() });
 
+            const el_level_override = document.querySelector("#level_override");
+            const el_level_value = document.querySelector("#level_value");
+            el_level_override.addEventListener("change", function () { applySettingsAndControls() });
+            el_level_value.addEventListener("change", function () { applySettingsAndControls() });
+
             function applySettingsAndControls() {
                 const mc = document.querySelector("#mobile_controls");
                 if (can_toggle_mobile_controls()) {
@@ -744,14 +785,22 @@
 
                 const el_fps_display = document.querySelector("#fps_display");
                 if (el_fps_override.checked) {
-                    el_fps_display.style.display = "block";
+                    el_fps_display.style.display = "table-row";
                     console.log(el_fps_value.value);
-                    game.set_frames_per_second(el_fps_value.value);
+                    game.set_fixed_frames_per_second(el_fps_value.value);
                 } else {
                     el_fps_display.style.display = "none";
-                    game.reset_frames_per_second();
+                    game.reset_fixed_frames_per_second();
                 }
 
+                const el_level_display = document.querySelector("#level_display");
+                if (el_level_override.checked) {
+                    el_level_display.style.display = "table-row";
+                    game.set_fixed_level(el_level_value.value);
+                } else {
+                    el_level_display.style.display = "none";
+                    game.reset_fixed_level();
+                }
             }
         }
         console.log("To report a bug, copy debug info with: `copy_debug_info()`");
