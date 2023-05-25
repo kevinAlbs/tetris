@@ -814,7 +814,6 @@
                 const el_fps_display = document.querySelector("#fps_display");
                 if (el_fps_override.checked) {
                     el_fps_display.style.display = "table-row";
-                    console.log(el_fps_value.value);
                     game.set_fixed_frames_per_second(el_fps_value.value);
                 } else {
                     el_fps_display.style.display = "none";
