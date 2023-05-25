@@ -539,7 +539,7 @@ function game_make(opts) {
     let tetrimino = null;
     let grid = grid_make(opts.grid || {});
     let gravity_counter = 0;
-    const kMSPerFrame = opts.kMSPerFrame || 1000 / 60;
+    const kMSPerFrame = 1000 / 60;
     let lock_timer_ms = 0;
     let locking = false;
     let lock_delay_reset_counter = 0;
