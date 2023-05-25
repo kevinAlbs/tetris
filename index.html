@@ -14,6 +14,14 @@
         gtag('config', 'G-HDRY5R79EL');
     </script>
     <style type="text/css">
+        body.dark {
+            background: #333;
+        }
+
+        body.dark a {
+            color: #FFF;
+        }
+
         * {
             padding: 0px;
             margin: 0px;
@@ -226,6 +234,10 @@
         <p><a href="#" id="toggle_settings">Show Settings</a></p>
         <div id="settings">
             <table>
+                <tr>
+                    <td><label>Dark mode</label></td>
+                    <td><input type="checkbox" id="dark_mode" /></td>
+                </tr>
                 <tr>
                     <td><label>Override Frames per second?</label></td>
                     <td><input type="checkbox" id="fps_override" /></td>
@@ -786,6 +798,9 @@
             el_level_override.addEventListener("change", function () { applySettingsAndControls() });
             el_level_value.addEventListener("change", function () { applySettingsAndControls() });
 
+            const el_dark_mode = document.querySelector("#dark_mode");
+            el_dark_mode.addEventListener("change", function () { applySettingsAndControls() });
+
             function applySettingsAndControls() {
                 const mc = document.querySelector("#mobile_controls");
                 if (can_toggle_mobile_controls()) {
@@ -814,7 +829,24 @@
                     el_level_display.style.display = "none";
                     game.reset_fixed_level();
                 }
+
+                if (el_dark_mode.checked) {
+                    document.querySelector("body").classList.add("dark");
+                } else {
+                    document.querySelector("body").classList.remove("dark");
+                }
+
+                window.localStorage.setItem("dark_mode", el_dark_mode.checked ? "on" : "off");
             }
+
+            function applyLocalStorage() {
+                if (window.localStorage.getItem("dark_mode") == "on") {
+                    el_dark_mode.checked = true;
+                }
+                applySettingsAndControls();
+            }
+            applyLocalStorage();
+
         }
         console.log("To report a bug, copy debug info with: `copy_debug_info()`");
     </script>
