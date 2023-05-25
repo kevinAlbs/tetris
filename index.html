@@ -266,6 +266,17 @@
             "T": "#d635fb"
         };
 
+        const typeToLockStyle = {
+            "test": "#FFF",
+            "Z": "#c90000",
+            "L": "#d19500",
+            "O": "#ccbd00",
+            "S": "#00bf3a",
+            "I": "#00a4b5",
+            "J": "#0071c2",
+            "T": "#a62bc2"
+        };
+
         const typeToStrokeStyle = {
             "test": "#333",
             "Z": "#740100",
@@ -381,6 +392,9 @@
                         continue;
                     }
                     ctx.fillStyle = typeToFillStyle[tetrimino.type];
+                    if (game.get_locking()) {
+                        ctx.fillStyle = typeToLockStyle[tetrimino.type];
+                    }
                     ctx.fillRect(gridBox.x + pair.j * kCellWidth, gridBox.y + pair.i * kCellWidth, kCellWidth, kCellWidth);
                     ctx.lineWidth = 2;
                     ctx.strokeStyle = typeToStrokeStyle[tetrimino.type];
@@ -539,7 +553,6 @@
                 ctx.lineWidth = 3;
                 ctx.strokeText(flash_score_value, gridBox.x + gridBox.width / 2, gridBox.y + 120, gridBox.width);
                 ctx.fillText(flash_score_value, gridBox.x + gridBox.width / 2, gridBox.y + 120, gridBox.width);
-                return;
             }
 
             // Special: if using 1 frame per second, show a clock.
@@ -709,7 +722,7 @@
                 render_callback: function (delta_ms) { do_render(game, delta_ms); },
                 inputs_apply_callback: function () { do_inputs_apply(game) },
                 inputs_apply_for_loop_callback: function () { do_inputs_apply_for_loop(game); },
-                frames_progress_callback: function (progress) { frame_progress = progress; console.log(progress); }
+                frames_progress_callback: function (progress) { frame_progress = progress; }
             });
             copy_debug_info = function () {
                 const debug_info = game.get_debug_info();

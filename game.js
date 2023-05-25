@@ -980,6 +980,8 @@ function game_make(opts) {
 
         // Reset T-Spin eligibility.
         score_did_rotate_last = false;
+
+        locking = false;
     }
 
     function try_spawn() {
@@ -1626,6 +1628,9 @@ function game_make(opts) {
     }
     obj.get_tetrimino = function () {
         return tetrimino;
+    }
+    obj.get_locking = function () {
+        return locking;
     }
     obj.get_ghost_piece = function () {
         return ghost_piece;
