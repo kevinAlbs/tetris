@@ -170,7 +170,6 @@
             top: -1px;
         }
 
-        #fps_display,
         #level_display {
             display: none;
         }
@@ -239,12 +238,8 @@
                     <td><input type="checkbox" id="dark_mode" /></td>
                 </tr>
                 <tr>
-                    <td><label>Override Frames per second?</label></td>
+                    <td><label>Play at one frame per second?</label></td>
                     <td><input type="checkbox" id="fps_override" /></td>
-                </tr>
-                <tr id="fps_display">
-                    <td><label>Frames per second</label></td>
-                    <td><input type="number" min="1" max="60" value="60" id="fps_value" /></td>
                 </tr>
                 <tr>
                     <td><label>Override Level?</label></td>
@@ -789,9 +784,7 @@
             });
 
             const el_fps_override = document.querySelector("#fps_override");
-            const el_fps_value = document.querySelector("#fps_value");
             el_fps_override.addEventListener("change", function () { applySettingsAndControls() });
-            el_fps_value.addEventListener("change", function () { applySettingsAndControls() });
 
             const el_level_override = document.querySelector("#level_override");
             const el_level_value = document.querySelector("#level_value");
@@ -811,12 +804,9 @@
                     }
                 }
 
-                const el_fps_display = document.querySelector("#fps_display");
                 if (el_fps_override.checked) {
-                    el_fps_display.style.display = "table-row";
-                    game.set_fixed_frames_per_second(el_fps_value.value);
+                    game.set_fixed_frames_per_second(1);
                 } else {
-                    el_fps_display.style.display = "none";
                     game.reset_fixed_frames_per_second();
                 }
 
