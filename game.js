@@ -1811,6 +1811,7 @@ function game_make(opts) {
             if (!(e.keyCode in key_states)) {
                 return;
             }
+            e.preventDefault();
             key_states[e.keyCode].down = true;
         });
         document.addEventListener("keyup", function (e) {
