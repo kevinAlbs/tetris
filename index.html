@@ -47,10 +47,6 @@
             display: none;
         }
 
-        #highscore {
-            display: block;
-        }
-
         table {
             width: 100%;
         }
@@ -870,6 +866,7 @@
             });
 
             document.querySelector("#highscore_submit").addEventListener("click", function (e) {
+                e.preventDefault();
                 const name = prompt("Enter name");
                 if (name == null) {
                     return;
@@ -905,7 +902,6 @@
                     });
                 });
 
-                e.preventDefault();
                 return false;
             })
 
