@@ -64,7 +64,7 @@
 <body>
     <div id="main">
 
-    <h1>Tetris Leaderboard</h1>
+    <h1>Tetris Leaderboard - Top 100</h1>
     <table>
 <?php
 
@@ -82,7 +82,7 @@ $query = "CREATE TABLE IF NOT EXISTS highscores (
 $db->exec($query);
 
 // Check if database already has entry. 
-$stmt = $db->prepare("SELECT * FROM highscores ORDER BY score DESC");
+$stmt = $db->prepare("SELECT * FROM highscores ORDER BY score DESC LIMIT 100");
 $res = $stmt->execute();
 while ($row = $res->fetchArray()) {
     echo "<table>";
