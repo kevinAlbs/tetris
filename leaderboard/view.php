@@ -71,6 +71,16 @@
 // Create/open the database
 $db = new SQLite3('tetris.db');
 
+// Create table if not exists
+$query = "CREATE TABLE IF NOT EXISTS highscores (
+    name TEXT,
+    score INTEGER,
+    level INTEGER,
+    lines INTEGER,
+    date INTEGER
+)";
+$db->exec($query);
+
 // Check if database already has entry. 
 $stmt = $db->prepare("SELECT * FROM highscores ORDER BY score DESC");
 $res = $stmt->execute();
