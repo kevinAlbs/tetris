@@ -47,6 +47,10 @@
             display: none;
         }
 
+        #highscore {
+            display: block;
+        }
+
         table {
             width: 100%;
         }
@@ -176,6 +180,11 @@
         #level_display {
             display: none;
         }
+
+        /* hide reCaptcha badge */
+        .grecaptcha-badge {
+            display: none !important;
+        }
     </style>
 </head>
 
@@ -277,13 +286,15 @@
             </table>
             <p>The High Score is saved in the browser.</p>
             <p><a href='#' id="highscore_reset">Reset High Score</a></p>
-        </div>
+            <p><a href='#' id="highscore_submit">Submit High Score to Leaderboard</a></p>
+            <p><a href='leaderboard/view.php' target='_blank'>View Leaderboard</a></p>
 
         <p><a href="https://github.com/kevinAlbs/tetris" target="_blank">See Source Code</a></p>
     </div>
 
     <script src="game.js"></script>
     <script src="tests.js"></script>
+    <script src="https://www.google.com/recaptcha/api.js?render=6Le7_0wmAAAAAGQhh1yjsA-AF8Fv9TWbh-z-VstJ"></script>
     <script>
         window.onload = main;
 
@@ -858,6 +869,46 @@
                 return false;
             });
 
+            document.querySelector("#highscore_submit").addEventListener("click", function (e) {
+                const name = prompt("Enter name");
+                if (name == null) {
+                    return;
+                }
+                if (name.trim() == "") {
+                    return;
+                }
+                // Get reCaptcha token.
+                grecaptcha.ready(function () {
+                    grecaptcha.execute('6Le7_0wmAAAAAGQhh1yjsA-AF8Fv9TWbh-z-VstJ', { action: 'submit' }).then(function (token) {
+                        const fd = new FormData();
+                        fd.append("token", token);
+                        fd.append("name", name);
+                        fd.append("score", highscore.score);
+                        fd.append("level", highscore.level);
+                        fd.append("lines", highscore.lines);
+                        fd.append("date", highscore.date);
+                        return fetch ("leaderboard/submit.php", {
+                            method: "POST",
+                            body: fd
+                        });
+                    }).then (res => {
+                        return res.json()
+                    }).then(res => {
+                        if (!res["ok"]) {
+                            alert ("Error submitting High Score: " + res["msg"]);
+                        } else {
+                            alert ("High Score saved");
+                        }
+                    }).catch(res => {
+                        console.log("Unexpected error submitting High Score", res);
+                        alert("Unexpected error submitting High Score. See Developer Tools for more information. Try refreshing the page.");
+                    });
+                });
+
+                e.preventDefault();
+                return false;
+            })
+
             function applySettingsAndControls() {
                 const mc = document.querySelector("#mobile_controls");
                 if (can_toggle_mobile_controls()) {
@@ -914,12 +965,10 @@
                 // Not higher.
                 return;
             }
-            console.log(score, level, lines);
             highscore.score = score;
             highscore.level = level;
             highscore.lines = lines;
             highscore.date = Date.now();
-            console.log("saving to local storage");
             window.localStorage.setItem("highscore", JSON.stringify(highscore));
             highscore_applyToUI();
         }
@@ -966,12 +1015,14 @@
                 document.querySelector("#highscore_level").innerHTML = "(Nothing yet)";
                 document.querySelector("#highscore_lines").innerHTML = "(Nothing yet)";
                 document.querySelector("#highscore_date").innerHTML = "(Nothing yet)";
+                document.querySelector("#highscore_submit").style.display = "none";
                 return;
             }
             document.querySelector("#highscore_score").innerHTML = highscore.score;
             document.querySelector("#highscore_level").innerHTML = highscore.level;
             document.querySelector("#highscore_lines").innerHTML = highscore.lines;
             document.querySelector("#highscore_date").innerHTML = (new Date(highscore.date)).toLocaleString();
+            document.querySelector("#highscore_submit").style.display = "block";
         }
 
         function highscore_reset() {
