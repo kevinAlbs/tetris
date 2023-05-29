@@ -22,6 +22,10 @@
             color: #FFF;
         }
 
+        body.dark .popup a {
+            color: initial;
+        }
+
         * {
             padding: 0px;
             margin: 0px;
@@ -37,8 +41,7 @@
             margin: 4px auto;
         }
 
-        #settings,
-        #controls {
+        .popup {
             background: #EEE;
             padding: 1em;
             display: none;
@@ -190,9 +193,8 @@
             <div class="button" id="pause">Pause</div>
             <div class="button hidden" id="reset">Reset</div>
         </div>
-        <p><a href="https://github.com/kevinAlbs/tetris">See Source</a></p>
         <p><a href="#" id="toggle_controls">Show Controls</a></p>
-        <div id="controls">
+        <div id="controls" class="popup">
             <p id="section_show_mobile_controls"><input type="checkbox" id="show_mobile_controls" /><label
                     for="show_mobile_controls">Show buttons?</label></p>
             <table>
@@ -231,7 +233,7 @@
             </table>
         </div>
         <p><a href="#" id="toggle_settings">Show Settings</a></p>
-        <div id="settings">
+        <div id="settings" class="popup">
             <table>
                 <tr>
                     <td><label>Dark mode</label></td>
@@ -251,7 +253,35 @@
                 </tr>
             </table>
         </div>
+
+        <p><a href="#" id="toggle_highscore">Show High Score</a></p>
+        <div id="highscore" class="popup">
+            <h1>High Score</h1>
+            <table>
+                <tr>
+                    <td>Score</td>
+                    <td id="highscore_score">(Nothing yet)</td>
+                </tr>
+                <tr>
+                    <td>Level</td>
+                    <td id="highscore_level">(Nothing yet)</td>
+                </tr>
+                <tr>
+                    <td>Lines</td>
+                    <td id="highscore_lines">(Nothing yet)</td>
+                </tr>
+                <tr>
+                    <td>Date</td>
+                    <td id="highscore_date">(Nothing yet)</td>
+                </tr>
+            </table>
+            <p>The High Score is saved in the browser.</p>
+            <p><a href='#' id="highscore_reset">Reset High Score</a></p>
+        </div>
+
+        <p><a href="https://github.com/kevinAlbs/tetris" target="_blank">See Source Code</a></p>
     </div>
+
     <script src="game.js"></script>
     <script src="tests.js"></script>
     <script>
@@ -590,6 +620,9 @@
                 ctx.lineTo(origin.x + Math.cos(angle) * radius, origin.y + Math.sin(angle) * radius);
                 ctx.stroke();
             }
+
+            // Try to update high score.
+            highscore_trySet(game.get_score_total(), game.get_level(), game.get_total_lines_cleared());
         }
 
         const kBtnSoftDrop = "soft_drop";
@@ -718,6 +751,8 @@
 
         let copy_debug_info = null;
         function main() {
+            // Load high score before creating game. Game may overwrite saved local storage.
+            highscore_loadFromLocalStorage()
             const game = game_make({
                 grid: { use_test_grid: false },
                 enable_spawn: true,
@@ -794,6 +829,35 @@
             const el_dark_mode = document.querySelector("#dark_mode");
             el_dark_mode.addEventListener("change", function () { applySettingsAndControls() });
 
+            const el_toggle_highscore = document.querySelector("#toggle_highscore");
+            const el_highscore = document.querySelector("#highscore");
+            el_toggle_highscore.addEventListener("click", function (e) {
+                e.stopPropagation();
+                e.preventDefault();
+                const text = el_toggle_highscore.innerText;
+                if (text == "Show High Score") {
+                    el_highscore.style.display = "block";
+                    el_toggle_highscore.innerText = "Hide High Score";
+                } else if (text == "Hide High Score") {
+                    el_highscore.style.display = "none";
+                    el_toggle_highscore.innerText = "Show High Score";
+                } else {
+                    throw "Unexpected high score text: " + text;
+                }
+                game.pause();
+                return false;
+            });
+
+            document.querySelector("#highscore_reset").addEventListener("click", function (e) {
+                e.preventDefault();
+                const ok = confirm("Confirm: Reset high score? This cannot be undone");
+                if (ok) {
+                    highscore_reset();
+                    highscore_applyToUI();
+                }
+                return false;
+            });
+
             function applySettingsAndControls() {
                 const mc = document.querySelector("#mobile_controls");
                 if (can_toggle_mobile_controls()) {
@@ -835,7 +899,89 @@
                 applySettingsAndControls();
             }
             applyLocalStorage();
+        }
 
+        let highscore = {
+            score: null,
+            level: null,
+            lines: null,
+            date: null
+        };
+
+        // highscore_trySet tries to set the high score if the `score` is higher.
+        function highscore_trySet(score, level, lines) {
+            if (highscore.score != null && highscore.score >= score) {
+                // Not higher.
+                return;
+            }
+            console.log(score, level, lines);
+            highscore.score = score;
+            highscore.level = level;
+            highscore.lines = lines;
+            highscore.date = Date.now();
+            console.log("saving to local storage");
+            window.localStorage.setItem("highscore", JSON.stringify(highscore));
+            highscore_applyToUI();
+        }
+
+        function highscore_loadFromLocalStorage() {
+            if (window.localStorage.getItem("highscore") == null) {
+                highscore_applyToUI();
+                return;
+            }
+            const got = window.localStorage.getItem("highscore");
+            let gotObj;
+            try {
+                gotObj = JSON.parse(got);
+            } catch (e) {
+                console.log("localStorage highscore is not valid JSON", got);
+                highscore_reset();
+                return;
+            }
+            function copyIntegerProperty(propName) {
+                if (!gotObj.hasOwnProperty(propName)) {
+                    console.log("localStorage highscore does not have property: %s", propName);
+                    highscore_reset();
+                    return;
+                }
+
+                const asInt = parseInt(gotObj[propName]);
+                if (asInt == NaN) {
+                    console.log("localStorage highscore property: %s is not an integer", propName);
+                    highscore_reset();
+                    return;
+                }
+                highscore[propName] = gotObj[propName];
+            }
+            copyIntegerProperty("score");
+            copyIntegerProperty("level");
+            copyIntegerProperty("lines");
+            copyIntegerProperty("date");
+            highscore_applyToUI();
+        }
+
+        function highscore_applyToUI() {
+            if (highscore.score === null) {
+                document.querySelector("#highscore_score").innerHTML = "(Nothing yet)";
+                document.querySelector("#highscore_level").innerHTML = "(Nothing yet)";
+                document.querySelector("#highscore_lines").innerHTML = "(Nothing yet)";
+                document.querySelector("#highscore_date").innerHTML = "(Nothing yet)";
+                return;
+            }
+            document.querySelector("#highscore_score").innerHTML = highscore.score;
+            document.querySelector("#highscore_level").innerHTML = highscore.level;
+            document.querySelector("#highscore_lines").innerHTML = highscore.lines;
+            document.querySelector("#highscore_date").innerHTML = (new Date(highscore.date)).toLocaleString();
+        }
+
+        function highscore_reset() {
+            window.localStorage.removeItem("highscore");
+            highscore = {
+                score: null,
+                level: null,
+                lines: null,
+                date: null
+            };
         }
         console.log("To report a bug, copy debug info with: `copy_debug_info()`");
     </script>
