@@ -86,11 +86,11 @@ $stmt = $db->prepare("SELECT * FROM highscores ORDER BY score DESC LIMIT 100");
 $res = $stmt->execute();
 while ($row = $res->fetchArray()) {
     echo "<table>";
-    echo "<tr><td>Name</td><td>{$row["name"]}</td></tr>";
-    echo "<tr><td>Score</td><td>{$row["score"]}</td></tr>";
-    echo "<tr><td>Level</td><td>{$row["level"]}</td></tr>";
-    echo "<tr><td>Lines</td><td>{$row["lines"]}</td></tr>";
-    echo "<tr><td>Date</td><td class='date' data-dateunix='{$row["date"]}'></td></tr>";
+    printf ("<tr><td>Name</td><td>%s</td></tr>", htmlspecialchars($row["name"]));
+    printf ("<tr><td>Score</td><td>%s</td></tr>", htmlspecialchars($row["score"]));
+    printf ("<tr><td>Level</td><td>%s</td></tr>", htmlspecialchars($row["level"]));
+    printf ("<tr><td>Lines</td><td>%s</td></tr>", htmlspecialchars($row["lines"]));
+    printf ("<tr><td>Date</td><td class='date' data-dateunix='%d'></td></tr>", htmlspecialchars($row["date"]));
     echo "</table>";
 }
 
