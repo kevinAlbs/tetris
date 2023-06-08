@@ -608,6 +608,7 @@ function game_make(opts) {
         spawn_shuffle = [];
         ghost_piece = null;
         stopped = false;
+        paused = false;
     };
 
     let last_n_renders = [];
