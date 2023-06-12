@@ -201,10 +201,6 @@
             background: #0093fc;
             cursor: pointer;
         }
-
-        #toggle_highscore {
-            display: none;
-        }
     </style>
 </head>
 
@@ -905,11 +901,11 @@
 
             document.querySelector("#highscore_submit").addEventListener("click", function (e) {
                 e.preventDefault();
-                submit_score (highscore);
+                submit_score(highscore);
                 return false;
             });
 
-            document.querySelector("#submit_score_button").addEventListener("click", function(e) {
+            document.querySelector("#submit_score_button").addEventListener("click", function (e) {
                 e.preventDefault();
                 const lastscore = {
                     score: game.get_score_total(),
@@ -917,7 +913,7 @@
                     lines: game.get_total_lines_cleared(),
                     date: Date.now()
                 };
-                submit_score (lastscore, () => {
+                submit_score(lastscore, () => {
                     document.querySelector("#submit_score_button").style.display = "none";
                 });
                 return false;
@@ -1049,7 +1045,7 @@
             };
         }
 
-        function submit_score (score, on_success) {
+        function submit_score(score, on_success) {
             const name = prompt("Enter name");
             if (name == null) {
                 return;
@@ -1067,19 +1063,19 @@
                     fd.append("level", score.level);
                     fd.append("lines", score.lines);
                     fd.append("date", score.date);
-                    return fetch ("leaderboard/submit.php", {
+                    return fetch("leaderboard/submit.php", {
                         method: "POST",
                         body: fd
                     });
-                }).then (res => {
+                }).then(res => {
                     return res.json()
                 }).then(res => {
                     if (!res["ok"]) {
-                        alert ("Error submitting Score: " + res["msg"]);
+                        alert("Error submitting Score: " + res["msg"]);
                     } else {
-                        alert ("Score saved");
+                        alert("Score saved");
                         if (on_success) {
-                            on_success ();
+                            on_success();
                         }
                     }
                 }).catch(res => {
