@@ -56,6 +56,31 @@
         #main table {
             width: 100%;
             margin-bottom: 10px;
+            table-layout: fixed;
+        }
+
+        .entry {
+            position: relative;
+            background: #EEE;
+        }
+
+        body.dark .entry {
+            background: #222;
+        }
+
+        #main table tr td:first-child {
+            width: 4em;
+        }
+
+        .entry .place {
+            position: absolute;
+            top: 1px;
+            right: 1px;
+            display: inline-block;
+            color: #111;
+            font-weight: bold;
+            background: #F55;
+            padding: 3px;
         }
 
     </style>
@@ -65,7 +90,6 @@
     <div id="main">
 
     <h1>Tetris Leaderboard - Top 100</h1>
-    <table>
 <?php
 
 // Create/open the database
@@ -84,7 +108,10 @@ $db->exec($query);
 // Check if database already has entry. 
 $stmt = $db->prepare("SELECT * FROM highscores ORDER BY score DESC LIMIT 100");
 $res = $stmt->execute();
+$place = 1;
 while ($row = $res->fetchArray()) {
+    echo "<div class='entry'>";
+    echo "<div class='place'>" . $place . "</div>";
     echo "<table>";
     printf ("<tr><td>Name</td><td>%s</td></tr>", htmlspecialchars($row["name"]));
     printf ("<tr><td>Score</td><td>%s</td></tr>", htmlspecialchars($row["score"]));
@@ -92,12 +119,13 @@ while ($row = $res->fetchArray()) {
     printf ("<tr><td>Lines</td><td>%s</td></tr>", htmlspecialchars($row["lines"]));
     printf ("<tr><td>Date</td><td class='date' data-dateunix='%d'></td></tr>", htmlspecialchars($row["date"]));
     echo "</table>";
+    echo "</div>";
+    $place++;
 }
 
 // Close the database connection
 $db->close();
 ?>
-    </table>
     </div>
 
     <script>
