@@ -306,6 +306,7 @@
             <p>The High Score is saved in the browser.</p>
             <p><a href='#' id="highscore_reset">Reset High Score</a></p>
             <p><a href='#' id="highscore_submit">Submit High Score to Leaderboard</a></p>
+            <p id="highscore_submitted">High Score was submitted to Leaderboard</p>
         </div>
         <p><a href='leaderboard/view.php' target='_blank'>View Leaderboard</a></p>
         <p><a href="https://github.com/kevinAlbs/tetris" target="_blank">See Source Code</a></p>
@@ -901,7 +902,11 @@
 
             document.querySelector("#highscore_submit").addEventListener("click", function (e) {
                 e.preventDefault();
-                submit_score(highscore);
+                submit_score(highscore, () => {
+                    highscore.submitted = true;
+                    highscore_applyToUI();
+                    window.localStorage.setItem("highscore", JSON.stringify(highscore));
+                });
                 return false;
             });
 
@@ -966,7 +971,8 @@
             score: null,
             level: null,
             lines: null,
-            date: null
+            date: null,
+            submitted: false,
         };
 
         // highscore_trySet tries to set the high score if the `score` is higher.
@@ -979,6 +985,7 @@
             highscore.level = level;
             highscore.lines = lines;
             highscore.date = Date.now();
+            highscore.submitted = false;
             window.localStorage.setItem("highscore", JSON.stringify(highscore));
             highscore_applyToUI();
         }
@@ -1016,6 +1023,9 @@
             copyIntegerProperty("level");
             copyIntegerProperty("lines");
             copyIntegerProperty("date");
+            if (gotObj.hasOwnProperty("submitted")) {
+                highscore["submitted"] = gotObj["submitted"];
+            }
             highscore_applyToUI();
         }
 
@@ -1026,13 +1036,21 @@
                 document.querySelector("#highscore_lines").innerHTML = "(Nothing yet)";
                 document.querySelector("#highscore_date").innerHTML = "(Nothing yet)";
                 document.querySelector("#highscore_submit").style.display = "none";
+                document.querySelector("#highscore_submitted").style.display = "none";
                 return;
             }
             document.querySelector("#highscore_score").innerHTML = highscore.score;
             document.querySelector("#highscore_level").innerHTML = highscore.level;
             document.querySelector("#highscore_lines").innerHTML = highscore.lines;
             document.querySelector("#highscore_date").innerHTML = (new Date(highscore.date)).toLocaleString();
-            document.querySelector("#highscore_submit").style.display = "block";
+            if (highscore.submitted) {
+                document.querySelector("#highscore_submit").style.display = "none";
+                document.querySelector("#highscore_submitted").style.display = "block";
+            } else {
+                document.querySelector("#highscore_submit").style.display = "block";
+                document.querySelector("#highscore_submitted").style.display = "none";
+            }
+            
         }
 
         function highscore_reset() {
@@ -1041,7 +1059,8 @@
                 score: null,
                 level: null,
                 lines: null,
-                date: null
+                date: null,
+                submitted: false,
             };
         }
 
