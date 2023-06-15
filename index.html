@@ -557,6 +557,8 @@
             }
 
             if (game.get_has_lost()) {
+                ctx.fillStyle = "rgba(0,0,0,.4)";
+                ctx.fillRect (gridBox.x, gridBox.y, gridBox.width, gridBox.height);
                 ctx.fillStyle = "#FFF";
                 ctx.font = "20px 'Courier New'";
                 ctx.textAlign = "center";
@@ -587,6 +589,8 @@
             }
 
             if (game.get_paused()) {
+                ctx.fillStyle = "rgba(0,0,0,.4)";
+                ctx.fillRect (gridBox.x, gridBox.y, gridBox.width, gridBox.height);
                 ctx.fillStyle = "#FFF";
                 ctx.font = "20px 'Courier New'";
                 ctx.textAlign = "center";
