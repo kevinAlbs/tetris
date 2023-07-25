@@ -47,7 +47,7 @@ if (!isset($result["success"])) {
 }
 
 if (!$result["success"]) {
-    errexit ("reCaptcha token did not succeed. Try refreshing the page and submitting again.");
+    errexit (sprintf("reCaptcha token did not succeed. Try refreshing the page and submitting again. Error codes: %s", implode($result["error-codes"])));
 }
 
 // From https://developers.google.com/recaptcha/docs/v3#interpreting_the_score:
